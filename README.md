@@ -1,20 +1,8 @@
-Linux & Macos (Travis) | Windows (Appveyor)
---- | ---
-[![Build Status](https://travis-ci.com/biovault/HDILib.svg?branch=master)](https://travis-ci.com/biovault/HDILib) | [![Build status](https://ci.appveyor.com/api/projects/status/xtd9ee63fukd462p?svg=true)](https://ci.appveyor.com/project/bldrvnlw/hdilib)
-
-Currently the following build matrix is performed
-
-OS | Architecture | Compiler
---- | --- | ---
-Windows | x64 | MSVC 2017
-Linux | x86_64 | gcc 9
-Macos | x86_64 | clang 10
-
-
-[![DOI](https://zenodo.org/badge/100361974.svg)](https://zenodo.org/badge/latestdoi/100361974)
-
-
 # HDILib: High Dimensional Inspector Library
+
+Slimmed-down fork of [HDILib](https://github.com/biovault/HDILib), mainly no FLANN dependency.
+To be compatible with the HDILib, you may want to include [nanoflann](https://github.com/jlblancoc/nanoflann), which is already present in `hdi/data/nano_flann.h`.
+
 HDILib is a library for the scalable analysis of large and high-dimensional data.
 It contains scalable manifold-learning algorithms, visualizations and visual-analytics frameworks.
 HDILib is implemented in C++, OpenGL and JavaScript.
@@ -87,12 +75,6 @@ On **Windows** use CMake
 ```
 cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release -DHDILIB_BUILD_WITH_CONAN=ON
 ```
-    (*Note: this assumes that the build dir is one level down from the project root.
-    The default of HDILIB_BUILD_WITH_CONAN is OFF*)
- - If all goes well Conan will have installed the dependencies in its cache and 
- created the required defines for the Cmake configuration.
- Open the .sln in VisualStudio and build ALL_BUILD for Release or Debug matching the CMAKE_BUILD_TYPE.
-     On Windows the result of the build are three *.lib files
 
 
 ## Applications

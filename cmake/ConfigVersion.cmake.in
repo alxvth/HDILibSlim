@@ -9,7 +9,7 @@ set(PACKAGE_VERSION @hdilibslim_package_version@)
 if(PACKAGE_FIND_VERSION STREQUAL "") # always matches
         set(PACKAGE_VERSION_COMPATIBLE TRUE)
     else()
-        if(@hdilib_package_version@ MATCHES "^([0-9]+\\.[0-9]+\\.[0-9]+)\\.") # strip the tweak version
+        if(@hdilibslim_package_version@ MATCHES "^([0-9]+\\.[0-9]+\\.[0-9]+)\\.") # strip the tweak version
             set(CVF_VERSION_NO_TWEAK "${CMAKE_MATCH_1}")
         else()
             set(CVF_VERSION_NO_TWEAK @hdilibslim_package_version@)

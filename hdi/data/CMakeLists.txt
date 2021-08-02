@@ -22,7 +22,7 @@ install(TARGETS ${PROJECT}
 
 install(EXPORT ${PROJECT}Targets
         FILE ${PROJECT}Targets.cmake
-        NAMESPACE HDI::
+        NAMESPACE HDISlim::
         DESTINATION lib/cmake/HDILibSlim
         COMPONENT HDIDATA_TARGET
 )
