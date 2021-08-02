@@ -39,6 +39,6 @@ install(CODE "foreach(HEADER ${HeaderFiles})
 install(EXPORT ${PROJECT}Targets
         FILE ${PROJECT}Targets.cmake
         NAMESPACE HDI::
-        DESTINATION lib/cmake/HDILib
+        DESTINATION lib/cmake/HDILibSlim
         COMPONENT HDIUTILS_TARGET
 )

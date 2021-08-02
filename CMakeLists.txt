@@ -7,10 +7,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Enable the INSTALL project for building by default in VS
 set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
 
-set(PROJECT "HDILib")
+set(PROJECT "HDILibSlim")
 PROJECT(${PROJECT})
 
-set(HDILib_VERSION "undefined" CACHE STRING "HDILib Library version")
+set(HDILibSlim_VERSION "undefined" CACHE STRING "HDILibSlim Library version")
 # Disallow in-source builds. 
 # Build in sub dir e.g. source/build* is still allowed!
 if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}" AND NOT $ENV{CI})
@@ -18,21 +18,6 @@ if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}" AND NOT $ENV{CI})
     "Make sure to remove CMakeCache.txt and CMakeFiles/ "
     "from the source directory!")
 endif()
-
-# This flag is used to allow conan to install the dependencies
-#option(HDILIB_BUILD_WITH_CONAN "Should Conan package manager be used?" OFF)
-#The cmake make sub directory contains the ConanSetup.cmake 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
-  "${PROJECT_SOURCE_DIR}/cmake")
-
-# CONAN is only used for setting up dependencies if the HDILIB_BUILD_WITH_CONAN is ON
-#include(ConanSetup)
-#message(STATUS "*** (HDI_EXTERNAL_FLANN_INCLUDE_DIR) ${HDI_EXTERNAL_FLANN_INCLUDE_DIR}")
-find_package(flann REQUIRED)
-message(STATUS "Flann Found state: ${flann_FOUND} include ${flann_INCLUDE_DIR}")
-#message(STATUS "******* moudle path ${CMAKE_MODULE_PATH} ***************")
-message (STATUS "Flann: ${HDI_EXTERNAL_FLANN_INCLUDE_DIR}")
-include_directories(${flann_INCLUDE_DIR})
 
 # If the CMAKE_INSTALL_PREFIX has not been set by the user, set it to the build folder
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -84,11 +69,11 @@ add_dependencies(hdidimensionalityreduction hdidata)
 include(CMakePackageConfigHelpers)
 
 # Generate the version file for use with find_package
-set(hdilib_package_version "${HDILib_VERSION}")
-configure_file(${CMAKE_SOURCE_DIR}/cmake/ConfigVersion.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfigVersion.cmake" @ONLY)
+set(hdilibslim_package_version "${HDILibSlim_VERSION}")
+configure_file(${CMAKE_SOURCE_DIR}/cmake/ConfigVersion.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/HDILibSlimConfigVersion.cmake" @ONLY)
 #write_basic_package_version_file(
-#  "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfigVersion.cmake"
-#  VERSION "${HDILib_VERSION}"
+#  "${CMAKE_CURRENT_BINARY_DIR}/HDILibSlimConfigVersion.cmake"
+#  VERSION "${HDILibSlim_VERSION}"
 #  # When the hdps core is stable compatibility can 
 #  # change to AnyNewerVersion or SameMajorVersion
 #  COMPATIBILITY ExactVersion
@@ -99,17 +84,17 @@ set(LIB_INSTALL_DIR lib)
 set(CURRENT_BUILD_DIR "${CMAKE_BINARY_DIR}")
 
 # create config file
-configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/HDILibConfig.cmake.in
-  "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfig.cmake"
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/HDILibSlimConfig.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/HDILibSlimConfig.cmake"
   PATH_VARS INCLUDE_INSTALL_DIR LIB_INSTALL_DIR CURRENT_BUILD_DIR
-  INSTALL_DESTINATION lib/cmake/HDILib
+  INSTALL_DESTINATION lib/cmake/HDILibSlim
   NO_CHECK_REQUIRED_COMPONENTS_MACRO
 )
 
 # install the package files files
 install(FILES
-          "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfig.cmake"
-          "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfigVersion.cmake"
-        DESTINATION lib/cmake/HDILib
-        COMPONENT HDI_PACKAGE
+          "${CMAKE_CURRENT_BINARY_DIR}/HDILibSlimConfig.cmake"
+          "${CMAKE_CURRENT_BINARY_DIR}/HDILibSlimConfigVersion.cmake"
+        DESTINATION lib/cmake/HDILibSlim
+        COMPONENT HDISlim_PACKAGE
 )

@@ -2,11 +2,6 @@ include_directories ("${CMAKE_SOURCE_DIR}")
 
 set(PROJECT "hdidimensionalityreduction")
 
-#FLANN
-SET(HDI_EXTERNAL_FLANN_INCLUDE_DIR  "HDI_EXTERNAL_FLANN_INCLUDE_DIR-NOTFOUND" CACHE PATH "External Flann Include Dir (Required)")
-include_directories(${HDI_EXTERNAL_FLANN_INCLUDE_DIR})
-message (STATUS "Flann: " ${HDI_EXTERNAL_FLANN_INCLUDE_DIR})
-
 get_filename_component(HNSWLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../external/hnsw" REALPATH)
 include_directories(${HNSWLIB_INCLUDE_DIR})
 message (STATUS "HNSWLIB: " ${HNSWLIB_INCLUDE_DIR})
@@ -26,10 +21,6 @@ file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp gpgpu_sne/*.cpp
 
 add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
 
-# Need to wait until add_library call before depenency of Flann can be set in case Flann is to be build from scratch.
-if(DEFINED(${HDI_FLANN_BUILD_INCLUDE_DIR}))
-	add_dependencies(${PROJECT} flann)
-endif(DEFINED(${HDI_FLANN_BUILD_INCLUDE_DIR}))
 
 if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -65,6 +56,6 @@ install(CODE "foreach(HEADER ${HeaderFiles})
 install(EXPORT ${PROJECT}Targets
         FILE ${PROJECT}Targets.cmake
         NAMESPACE HDI::
-        DESTINATION lib/cmake/HDILib
+        DESTINATION lib/cmake/HDILibSlim
         COMPONENT HDIDIMENSIONALITYREDUCTION_TARGET
 )

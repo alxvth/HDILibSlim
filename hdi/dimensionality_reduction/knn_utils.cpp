@@ -31,7 +31,6 @@ namespace hdi {
     std::map<std::string, int> supported_knn_libraries()
     {
       std::map<std::string, int> result;
-      result["FLANN"] = hdi::dr::KNN_FLANN;
 #ifdef HNSWLIB_SUPPORTED
       result["HNSW"] = hdi::dr::KNN_HNSW;
 #endif
@@ -48,9 +47,6 @@ namespace hdi {
 
       switch (knn_lib)
       {
-      case hdi::dr::KNN_FLANN: {
-        return result;
-      }
       case hdi::dr::KNN_HNSW: {
         result["Inner Product"] = hdi::dr::KNN_METRIC_INNER_PRODUCT;
         return result;

@@ -88,8 +88,6 @@
 #pragma warning( disable : 4018)
 #pragma warning( push )
 #pragma warning( disable : 4244)
-//#define FLANN_USE_CUDA
-#include "flann/flann.h"
 #pragma warning( pop )
 #pragma warning( pop )
 #pragma warning( pop )
@@ -106,7 +104,7 @@ namespace hdi {
       _num_neighbors(30),
       _aknn_num_trees(4),
       _aknn_num_checks(1024),
-      _aknn_algorithm(hdi::dr::KNN_FLANN),
+      _aknn_algorithm(hdi::dr::KNN_ANNOY),
       _aknn_metric(hdi::dr::KNN_METRIC_EUCLIDEAN),
       _aknn_algorithmP1(16), // default parameter for HNSW
       _aknn_algorithmP2(200), // default parameter for HNSW
@@ -287,40 +285,23 @@ namespace hdi {
       neighborhood_graph.resize(_num_dps*nn);
       distance_based_probabilities.resize(_num_dps*nn);
         
-      // Fallback to FLANN if others are not supported
+      // Fallback to ANNOY if others are not supported
       #ifndef HNSWLIB_SUPPORTED
         if (_params._aknn_algorithm == hdi::dr::KNN_HNSW)
         {
-            hdi::utils::secureLog(_logger, "HNSW not available, falling back to FLANN");
-            _params._aknn_algorithm = hdi::dr::KNN_FLANN;
+            hdi::utils::secureLog(_logger, "HNSW not available, falling back to ANNOY");
+            _params._aknn_algorithm = hdi::dr::KNN_ANNOY;
         }
       #endif // HNSWLIB_SUPPORTED
                 
       #ifndef __USE_ANNOY__
         if (_params._aknn_algorithm == hdi::dr::KNN_ANNOY)
         {
-            _params._aknn_algorithm = hdi::dr::KNN_FLANN;
+            _params._aknn_algorithm = hdi::dr::KNN_HNSW;
         }
       #endif // __USE_ANNOY__
 
-      if(_params._aknn_algorithm == hdi::dr::KNN_FLANN)
-      {
-        utils::secureLog(_logger, "Computing the neighborhood graph...");
-        flann::Matrix<scalar_type> dataset(_high_dimensional_data, _num_dps, _dimensionality);
-        flann::Matrix<scalar_type> query(_high_dimensional_data, _num_dps, _dimensionality);
-
-        flann::Index<flann::L2<scalar_type> > index(dataset, flann::KDTreeIndexParams(_params._aknn_num_trees));
-        utils::secureLog(_logger, "\tBuilding the trees...");
-        utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
-        index.buildIndex();
-        flann::Matrix<int> indices_mat(neighborhood_graph.data(), query.rows, nn);
-        flann::Matrix<scalar_type> dists_mat(distance_based_probabilities.data(), query.rows, nn);
-        flann::SearchParams params(_params._aknn_num_checks);
-        params.cores = 0; //all cores
-        utils::secureLog(_logger, "\tAKNN queries...");
-        index.knnSearch(query, indices_mat, dists_mat, nn, params);
-      }
-      else if (_params._aknn_algorithm == hdi::dr::KNN_HNSW)
+      if (_params._aknn_algorithm == hdi::dr::KNN_HNSW)
       {
 #ifdef HNSWLIB_SUPPORTED
         utils::secureLog(_logger, "Computing the neighborhood graph with HNSW Lib...");

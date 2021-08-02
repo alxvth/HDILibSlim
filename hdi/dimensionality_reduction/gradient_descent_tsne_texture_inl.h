@@ -51,8 +51,6 @@
 #pragma warning( disable : 4018)
 #pragma warning( push )
 #pragma warning( disable : 4244)
-//#define FLANN_USE_CUDA
-#include "flann/flann.h"
 #pragma warning( pop )
 #pragma warning( pop )
 #pragma warning( pop )

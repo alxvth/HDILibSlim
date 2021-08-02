@@ -43,7 +43,6 @@ namespace hdi{
   
     enum knn_library
     {
-      KNN_FLANN = -1,
       KNN_HNSW = 0,
       KNN_ANNOY = 1
     };

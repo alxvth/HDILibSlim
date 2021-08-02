@@ -9,9 +9,6 @@ sudo mkdir /etc/xdg/qtchooser
 sudo touch /etc/xdg/qtchooser/default.conf
 printf "/opt/qt55/bin\n/opt/qt55/lib" | sudo tee /etc/xdg/qtchooser/default.conf
 
-sudo apt-get install libflann-dev
-git clone https://github.com/RoaringBitmap/CRoaring.git
-cd CRoaring
 
 mkdir -p build
 cd build

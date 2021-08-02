@@ -88,7 +88,6 @@
 #pragma warning( disable : 4018)
 #pragma warning( push )
 #pragma warning( disable : 4244)
-#include "flann/flann.h"
 #pragma warning( pop )
 #pragma warning( pop )
 #pragma warning( pop )
@@ -105,7 +104,7 @@ namespace hdi {
       _perplexity_multiplier(3),
       _num_trees(4),
       _num_checks(1024),
-      _aknn_algorithm(hdi::dr::KNN_FLANN),
+      _aknn_algorithm(hdi::dr::KNN_ANNOY),
       _aknn_metric(hdi::dr::KNN_METRIC_EUCLIDEAN),
       _aknn_algorithmP1(16), // default parameter for HNSW
       _aknn_algorithmP2(200) // default parameter for HNSW
@@ -193,46 +192,23 @@ namespace hdi {
 
     void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::computeHighDimensionalDistances(scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, std::vector<scalar_type>& distances_squared, std::vector<int>& indices, Parameters& params) {
 
-      // Fallback to FLANN if others are not supported
+      // Fallback to ANNOY if others are not supported
 #ifndef HNSWLIB_SUPPORTED
       if (params._aknn_algorithm == hdi::dr::KNN_HNSW)
       {
-        hdi::utils::secureLog(_logger, "HNSW not available, falling back to FLANN");
-        params._aknn_algorithm = hdi::dr::KNN_FLANN;
+        hdi::utils::secureLog(_logger, "HNSW not available, falling back to ANNOY");
+        params._aknn_algorithm = hdi::dr::KNN_ANNOY;
       }
 #endif // HNSWLIB_SUPPORTED
 
 #ifndef __USE_ANNOY__
       if (params._aknn_algorithm == hdi::dr::KNN_ANNOY)
       {
-        params._aknn_algorithm = hdi::dr::KNN_FLANN;
+        params._aknn_algorithm = hdi::dr::KNN_HNSW;
       }
 #endif // __USE_ANNOY__
 
-      if (params._aknn_algorithm == hdi::dr::KNN_FLANN)
-      {
-        hdi::utils::secureLog(_logger, "Computing approximated knn with Flann...");
-        flann::Matrix<scalar_type> dataset(high_dimensional_data, num_dps, num_dim);
-        flann::Matrix<scalar_type> query(high_dimensional_data, num_dps, num_dim);
-
-        flann::Index<flann::L2<scalar_type> > index(dataset, flann::KDTreeIndexParams(params._num_trees));
-        const unsigned int nn = params._perplexity*params._perplexity_multiplier + 1;
-        distances_squared.resize(num_dps*nn);
-        indices.resize(num_dps*nn);
-        {
-          utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._trees_construction_time);
-          index.buildIndex();
-        }
-        {
-          utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._aknn_time);
-          flann::Matrix<int> indices_mat(indices.data(), query.rows, nn);
-          flann::Matrix<scalar_type> dists_mat(distances_squared.data(), query.rows, nn);
-          flann::SearchParams flann_params(params._num_checks);
-          flann_params.cores = 0; //all cores
-          index.knnSearch(query, indices_mat, dists_mat, nn, flann_params);
-        }
-      }
-      else if (params._aknn_algorithm == hdi::dr::KNN_HNSW)
+      if (params._aknn_algorithm == hdi::dr::KNN_HNSW)
       {
 #ifdef HNSWLIB_SUPPORTED
         hdi::utils::secureLog(_logger, "Computing approximated knn with HNSWLIB...");
