@@ -50,7 +50,7 @@ Reference to cite when you use HDI in a research paper:
 When cloning the repo be aware that it includes submodules. With the latest git versions you shoule use the following command:
 
 ```
-git clone --recurse-submodules https://github.com/biovault/HDILib.git
+git clone --recurse-submodules https://github.com/alxvth/HDILibSlim.git
 ```
 
 ### Requirements
