@@ -20,6 +20,12 @@ install(TARGETS ${PROJECT}
     COMPONENT hdidata
 )
 
+# install Debug info files ("*.pdb") on windows
+install(FILES "$<TARGET_FILE_DIR:${PROJECT}>/${PROJECT}.pdb" 
+	DESTINATION lib/$<CONFIGURATION> 
+	OPTIONAL
+)
+
 install(EXPORT ${PROJECT}Targets
         FILE ${PROJECT}Targets.cmake
         NAMESPACE HDISlim::
