@@ -1,6 +1,6 @@
 # HDILib: High Dimensional Inspector Library
 
-Slimmed-down fork of [HDILib](https://github.com/biovault/HDILib), mainly no FLANN dependency.
+Slimmed-down fork of [HDILib](https://github.com/biovault/HDILib): mainly no external dependencies like FLANN, that have to be compiled.
 To be compatible with the HDILib, you may want to include [nanoflann](https://github.com/jlblancoc/nanoflann), which is already present in `hdi/data/nano_flann.h`.
 
 HDILib is a library for the scalable analysis of large and high-dimensional data.
@@ -50,7 +50,7 @@ Reference to cite when you use HDI in a research paper:
 When cloning the repo be aware that it includes submodules. With the latest git versions you shoule use the following command:
 
 ```
-git clone --recurse-submodules https://github.com/biovault/HDILib.git
+git clone --recurse-submodules https://github.com/alxvth/HDILibSlim.git
 ```
 
 ### Requirements
@@ -70,10 +70,10 @@ sudo make install
 
 ### Windows
 
-On **Windows** use CMake
+On **Windows** use CMake and set a `custom_install_path`
 
 ```
-cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release -DHDILIB_BUILD_WITH_CONAN=ON
+cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="custom_install_path"
 ```
 
 

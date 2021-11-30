@@ -17,5 +17,3 @@ make
 sudo make install
 
 cd ../ #build
-cd ../ #CRoaring
-rm -drf CRoaring
