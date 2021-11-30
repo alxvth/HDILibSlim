@@ -22,6 +22,12 @@ install(TARGETS ${PROJECT}
     COMPONENT hdiutils
 )
 
+# install Debug info files ("*.pdb") on windows
+install(FILES "$<TARGET_FILE_DIR:${PROJECT}>/${PROJECT}.pdb" 
+	DESTINATION lib/$<CONFIGURATION> 
+	OPTIONAL
+)
+
 # Preserve the header hierarchy by explicit install
 # the CMake PUBLIC_HEADER target property flattens it if used.
 install(CODE "foreach(HEADER ${HeaderFiles})
