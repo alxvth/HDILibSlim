@@ -1,12 +1,14 @@
 set(PROJECT_UTILS "hdiutils")
 
 # Gather list of all .h files in "/"
-file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h glad/*.h glad/KHR/*.h)
+file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h)
 file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
 
 add_library(${PROJECT_UTILS} STATIC ${HeaderFiles} ${SourceFiles} ${Resources} )
 
 target_include_directories(${PROJECT_UTILS} PRIVATE ${PROJECT_SOURCE_DIR})
+
+target_link_libraries(${PROJECT_UTILS} PRIVATE glad::glad)
 
 if (UNIX)
     target_link_libraries (${PROJECT_UTILS} PRIVATE ${CMAKE_DL_LIBS}) # glad.cpp requires -ldl

@@ -8,6 +8,8 @@ add_library(${PROJECT_DR} STATIC ${HeaderFiles} ${SourceFiles} )
 
 target_include_directories(${PROJECT_DR} PRIVATE ${PROJECT_SOURCE_DIR})
 
+target_link_libraries(${PROJECT_DR} PRIVATE glad::glad)
+
 # check compiler intrinsics and link against them
 check_and_link_AVX(${PROJECT_DR})
 

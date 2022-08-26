@@ -33,7 +33,7 @@
 
 #pragma once
 
-#include "hdi/utils/glad/glad.h"
+#include <glad/glad.h>
 #include "hdi/data/shader.h"
 #include "hdi/data/embedding.h"
 #include "hdi/data/map_mem_eff.h"

@@ -9,7 +9,8 @@ add_library(${PROJECT_DATA} STATIC ${HeaderFiles} ${SourceFiles} )
 target_include_directories(${PROJECT_DATA} PRIVATE ${PROJECT_SOURCE_DIR})
 
 set_target_properties(${PROJECT_DATA} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
-target_link_libraries(${PROJECT_DATA} PRIVATE ${OPENGL_LIBRARIES})
+
+target_link_libraries(${PROJECT_DATA} PRIVATE glad::glad)
 
 # check compiler intrinsics and link against them
 check_and_link_AVX(${PROJECT_DATA})
