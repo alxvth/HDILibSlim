@@ -1,6 +1,6 @@
 include_directories ("${CMAKE_SOURCE_DIR}")
 
-set(PROJECT "hdidimensionalityreduction")
+set(PROJECT_DR "hdidimensionalityreduction")
 
 get_filename_component(HNSWLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../external/hnsw" REALPATH)
 include_directories(${HNSWLIB_INCLUDE_DIR})
@@ -13,34 +13,39 @@ message (STATUS "Annoy: " ${ANNOY_INCLUDE_DIR})
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__USE_ANNOY__")
 
 
-
 # Gather list of all .h files in "/"
 file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h gpgpu_sne/*.h)
 message(STATUS "################# ${HeaderFiles} ##############")
 file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp gpgpu_sne/*.cpp)
 
-add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
+add_library(${PROJECT_DR} STATIC ${HeaderFiles} ${SourceFiles} )
 
+# check compiler intrinsics and link against them
+check_and_link_AVX(${PROJECT_DR})
+
+if(OpenMP_CXX_FOUND) 
+	target_link_libraries(${PROJECT_DR} PRIVATE OpenMP::OpenMP_CXX)
+endif()
 
 if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
-    target_link_libraries(${PROJECT} PRIVATE Threads::Threads)
+    target_link_libraries(${PROJECT_DR} PRIVATE Threads::Threads)
 endif(UNIX)
 
 
 ########### INSTALL ##############
-#set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
+#set_target_properties(${PROJECT_DR} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 
-install(TARGETS ${PROJECT}
-    EXPORT ${PROJECT}Targets
+install(TARGETS ${PROJECT_DR}
+    EXPORT ${PROJECT_DR}Targets
     LIBRARY DESTINATION lib/$<CONFIGURATION>
     ARCHIVE DESTINATION lib/$<CONFIGURATION>
     COMPONENT hdidimensionalityreduction
 )
 
 # install Debug info files ("*.pdb") on windows
-install(FILES "$<TARGET_FILE_DIR:${PROJECT}>/${PROJECT}.pdb" 
+install(FILES "$<TARGET_FILE_DIR:${PROJECT_DR}>/${PROJECT_DR}.pdb" 
 	DESTINATION lib/$<CONFIGURATION> 
 	OPTIONAL
 )
@@ -59,8 +64,8 @@ install(CODE "foreach(HEADER ${HeaderFiles})
     COMPONENT PUBLIC_HEADERS
 )
 
-install(EXPORT ${PROJECT}Targets
-        FILE ${PROJECT}Targets.cmake
+install(EXPORT ${PROJECT_DR}Targets
+        FILE ${PROJECT_DR}Targets.cmake
         NAMESPACE HDISlim::
         DESTINATION lib/cmake/HDILibSlim
         COMPONENT HDIDIMENSIONALITYREDUCTION_TARGET

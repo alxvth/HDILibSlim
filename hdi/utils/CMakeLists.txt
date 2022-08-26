@@ -1,29 +1,36 @@
 include_directories ("${CMAKE_SOURCE_DIR}")
 
-set(PROJECT "hdiutils")
+set(PROJECT_UTILS "hdiutils")
 
 # Gather list of all .h files in "/"
 file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h glad/*.h glad/KHR/*.h)
 file(GLOB SourceFiles *.cpp)
 
-add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} ${Resources} )
+add_library(${PROJECT_UTILS} STATIC ${HeaderFiles} ${SourceFiles} ${Resources} )
 
 if (UNIX)
-    target_link_libraries (hdiutils ${CMAKE_DL_LIBS}) # glad.cpp requires -ldl
+    target_link_libraries (${PROJECT_UTILS} PRIVATE ${CMAKE_DL_LIBS}) # glad.cpp requires -ldl
 endif (UNIX)
 
-########### INSTALL ##############
-#set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
+# check compiler intrinsics and link against them
+check_and_link_AVX(${PROJECT_UTILS})
 
-install(TARGETS ${PROJECT}
-    EXPORT ${PROJECT}Targets
+if(OpenMP_CXX_FOUND) 
+	target_link_libraries(${PROJECT_UTILS} PRIVATE OpenMP::OpenMP_CXX)
+endif()
+
+########### INSTALL ##############
+#set_target_properties(${PROJECT_UTILS} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
+
+install(TARGETS ${PROJECT_UTILS}
+    EXPORT ${PROJECT_UTILS}Targets
     LIBRARY DESTINATION lib/$<CONFIGURATION>
     ARCHIVE DESTINATION lib/$<CONFIGURATION>
     COMPONENT hdiutils
 )
 
 # install Debug info files ("*.pdb") on windows
-install(FILES "$<TARGET_FILE_DIR:${PROJECT}>/${PROJECT}.pdb" 
+install(FILES "$<TARGET_FILE_DIR:${PROJECT_UTILS}>/${PROJECT_UTILS}.pdb" 
 	DESTINATION lib/$<CONFIGURATION> 
 	OPTIONAL
 )
@@ -42,8 +49,8 @@ install(CODE "foreach(HEADER ${HeaderFiles})
     COMPONENT PUBLIC_HEADERS
 )
 
-install(EXPORT ${PROJECT}Targets
-        FILE ${PROJECT}Targets.cmake
+install(EXPORT ${PROJECT_UTILS}Targets
+        FILE ${PROJECT_UTILS}Targets.cmake
         NAMESPACE HDISlim::
         DESTINATION lib/cmake/HDILibSlim
         COMPONENT HDIUTILS_TARGET
