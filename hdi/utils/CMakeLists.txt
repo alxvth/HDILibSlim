@@ -1,16 +1,18 @@
-include_directories ("${CMAKE_SOURCE_DIR}")
-
 set(PROJECT_UTILS "hdiutils")
 
 # Gather list of all .h files in "/"
 file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h glad/*.h glad/KHR/*.h)
-file(GLOB SourceFiles *.cpp)
+file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
 
 add_library(${PROJECT_UTILS} STATIC ${HeaderFiles} ${SourceFiles} ${Resources} )
+
+target_include_directories(${PROJECT_UTILS} PRIVATE ${PROJECT_SOURCE_DIR})
 
 if (UNIX)
     target_link_libraries (${PROJECT_UTILS} PRIVATE ${CMAKE_DL_LIBS}) # glad.cpp requires -ldl
 endif (UNIX)
+
+target_compile_features(${PROJECT_UTILS} PRIVATE cxx_std_17)
 
 # check compiler intrinsics and link against them
 check_and_link_AVX(${PROJECT_UTILS})

@@ -1,14 +1,7 @@
-cmake_minimum_required (VERSION 3.15)
+cmake_minimum_required (VERSION 3.21)
 
-# Set C++11 language standard
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Enable the INSTALL project for building by default in VS
-set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
-
-set(PROJECT "HDILibSlim")
-PROJECT(${PROJECT})
+set(PROJECT_HDILibSlim "HDILibSlim")
+PROJECT(${PROJECT_HDILibSlim} C CXX)
 
 set(HDILibSlim_VERSION "undefined" CACHE STRING "HDILibSlim Library version")
 # Disallow in-source builds. 
@@ -71,7 +64,7 @@ include(CMakePackageConfigHelpers)
 
 # Generate the version file for use with find_package
 set(hdilibslim_package_version "${HDILibSlim_VERSION}")
-configure_file(${CMAKE_SOURCE_DIR}/cmake/ConfigVersion.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/HDILibSlimConfigVersion.cmake" @ONLY)
+configure_file(${PROJECT_SOURCE_DIR}/cmake/ConfigVersion.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/HDILibSlimConfigVersion.cmake" @ONLY)
 #write_basic_package_version_file(
 #  "${CMAKE_CURRENT_BINARY_DIR}/HDILibSlimConfigVersion.cmake"
 #  VERSION "${HDILibSlim_VERSION}"

@@ -1,12 +1,12 @@
-include_directories ("${CMAKE_SOURCE_DIR}")
-
 set(PROJECT_DATA "hdidata")
 
 # Gather list of all .h files in "/"
-file(GLOB HeaderFiles *.h)
-file(GLOB SourceFiles *.cpp)
+file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}  *.h)
+file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
 
 add_library(${PROJECT_DATA} STATIC ${HeaderFiles} ${SourceFiles} )
+
+target_include_directories(${PROJECT_DATA} PRIVATE ${PROJECT_SOURCE_DIR})
 
 set_target_properties(${PROJECT_DATA} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 target_link_libraries(${PROJECT_DATA} PRIVATE ${OPENGL_LIBRARIES})
