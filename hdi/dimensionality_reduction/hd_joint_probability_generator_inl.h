@@ -88,6 +88,7 @@
 #pragma warning( disable : 4018)
 #pragma warning( push )
 #pragma warning( disable : 4244)
+#include <flann/flann.h>
 #pragma warning( pop )
 #pragma warning( pop )
 #pragma warning( pop )
@@ -344,6 +345,29 @@ namespace hdi {
         }
         delete tree;
 #endif // __USE_ANNOY__
+      }
+      else if (params._aknn_algorithm == hdi::dr::KNN_FLANN)
+      {
+      hdi::utils::secureLog(_logger, "Computing approximated knn with Flann...");
+      flann::Matrix<scalar_type> dataset(high_dimensional_data, num_dps, num_dim);
+      flann::Matrix<scalar_type> query(high_dimensional_data, num_dps, num_dim);
+
+      flann::Index<flann::L2<scalar_type> > index(dataset, flann::KDTreeIndexParams(params._num_trees));
+      const unsigned int nn = params._perplexity * params._perplexity_multiplier + 1;
+      distances_squared.resize(num_dps * nn);
+      indices.resize(num_dps * nn);
+      {
+        utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._trees_construction_time);
+        index.buildIndex();
+      }
+      {
+        utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._aknn_time);
+        flann::Matrix<int> indices_mat(indices.data(), query.rows, nn);
+        flann::Matrix<scalar_type> dists_mat(distances_squared.data(), query.rows, nn);
+        flann::SearchParams flann_params(params._num_checks);
+        flann_params.cores = 0; //all cores
+        index.knnSearch(query, indices_mat, dists_mat, nn, flann_params);
+      }
       }
     }
 

@@ -51,6 +51,7 @@
 #pragma warning( disable : 4018)
 #pragma warning( push )
 #pragma warning( disable : 4244)
+#include <flann/flann.h>
 #pragma warning( pop )
 #pragma warning( pop )
 #pragma warning( pop )

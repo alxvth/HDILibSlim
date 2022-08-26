@@ -37,6 +37,9 @@ namespace hdi {
 #ifdef __USE_ANNOY__
       result["ANNOY"] = hdi::dr::KNN_ANNOY;
 #endif
+
+      result["FLANN"] = hdi::dr::KNN_FLANN;
+
       return result;
     }
 
@@ -55,6 +58,9 @@ namespace hdi {
         result["Cosine"] = hdi::dr::KNN_METRIC_COSINE;
         result["Manhattan"] = hdi::dr::KNN_METRIC_MANHATTAN;
         result["Dot"] = hdi::dr::KNN_METRIC_DOT;
+        return result;
+      }
+      case hdi::dr::KNN_FLANN: {
         return result;
       }
 

@@ -40,6 +40,7 @@ include(CMakeCommon)
 
 find_package(OpenMP)
 find_package(glad CONFIG REQUIRED)
+find_package(flann CONFIG REQUIRED)
 
 if(OPENMP_FOUND)
 	message (STATUS "OpenMP found ${OpenMP_CXX_LIB_NAMES}")

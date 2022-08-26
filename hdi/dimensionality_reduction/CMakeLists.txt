@@ -25,14 +25,15 @@ endif(UNIX)
 
 get_filename_component(HNSWLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../external/hnsw" REALPATH)
 target_include_directories(${PROJECT_DR} PRIVATE ${HNSWLIB_INCLUDE_DIR})
+target_compile_definitions(${PROJECT_DR} PRIVATE HNSWLIB_FOUND)
 message (STATUS "HNSWLIB: " ${HNSWLIB_INCLUDE_DIR})
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHNSWLIB_FOUND")
 
 get_filename_component(ANNOY_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../external/annoy/src" REALPATH)
 target_include_directories(${PROJECT_DR} PRIVATE ${ANNOY_INCLUDE_DIR})
+target_compile_definitions(${PROJECT_DR} PRIVATE __USE_ANNOY__)
 message (STATUS "Annoy: " ${ANNOY_INCLUDE_DIR})
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__USE_ANNOY__")
 
+target_link_libraries(${PROJECT_DR} PRIVATE flann::flann_cpp_s)
 
 ########### INSTALL ##############
 #set_target_properties(${PROJECT_DR} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
