@@ -35,7 +35,7 @@
 #ifdef __APPLE__
     #include <OpenGL/gl3.h>
 #else // __APPLE__
-  #include <glad/glad.h>
+  #include "hdi/utils/glad/glad.h"
 #endif // __APPLE__
 
 #include "hdi/data/shader.h"

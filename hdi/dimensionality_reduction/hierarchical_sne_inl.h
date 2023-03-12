@@ -81,23 +81,6 @@
 #endif
 #endif // __USE_ANNOY__
 
-#pragma warning( push )
-#pragma warning( disable : 4267)
-#pragma warning( push )
-#pragma warning( disable : 4291)
-#pragma warning( push )
-#pragma warning( disable : 4996)
-#pragma warning( push )
-#pragma warning( disable : 4018)
-#pragma warning( push )
-#pragma warning( disable : 4244)
-#include <flann/flann.h>
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
-
 namespace hdi {
   namespace dr {
     /////////////////////////////////////////////////////////////////////////
@@ -433,24 +416,6 @@ namespace hdi {
         }
         delete tree;
 #endif // __USE_ANNOY__
-      }
-      else if (_params._aknn_algorithm == hdi::dr::KNN_FLANN)
-      {
-        hdi::utils::secureLog(_logger, "Computing approximated knn with FLANN...");
-
-        flann::Matrix<scalar_type> dataset(_high_dimensional_data, _num_dps, _dimensionality);
-        flann::Matrix<scalar_type> query(_high_dimensional_data, _num_dps, _dimensionality);
-
-        flann::Index<flann::L2<scalar_type> > index(dataset, flann::KDTreeIndexParams(_params._aknn_num_trees));
-        utils::secureLog(_logger, "\tBuilding the trees...");
-        utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
-        index.buildIndex();
-        flann::Matrix<int> indices_mat(neighborhood_graph.data(), query.rows, nn);
-        flann::Matrix<scalar_type> dists_mat(distance_based_probabilities.data(), query.rows, nn);
-        flann::SearchParams params(_params._aknn_num_checks);
-        params.cores = 0; //all cores
-        utils::secureLog(_logger, "\tAKNN queries...");
-        index.knnSearch(query, indices_mat, dists_mat, nn, params);
       }
 
       {

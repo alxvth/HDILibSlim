@@ -1,9 +1,0 @@
-{
-  "name": "HDILibSlim",
-  "version": "0.0.1",
-  "builtin-baseline":"a9dc9a4b32150e61518ad7b8ce963abeefd3261d",
-  "dependencies": [
-    { "name": "flann", "version>=": "2019-04-07"},
-    { "name": "glad", "features": [ "gl-api-latest" ]}
-  ]
-}
