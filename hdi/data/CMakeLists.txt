@@ -18,6 +18,8 @@ if(OpenMP_CXX_FOUND)
 	target_link_libraries(${PROJECT_DATA} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
+target_compile_features(${PROJECT_DATA} PRIVATE cxx_std_17)
+
 ########### INSTALL ##############
 install(TARGETS ${PROJECT_DATA}
     EXPORT ${PROJECT_DATA}Targets
