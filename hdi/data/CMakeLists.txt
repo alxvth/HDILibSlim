@@ -1,5 +1,7 @@
 set(PROJECT_DATA "hdidata")
 
+option(USE_AVX "Use AVX instructions sets if available" ON)
+
 # Gather list of all .h files in "/"
 file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}  *.h)
 file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
@@ -11,14 +13,14 @@ target_include_directories(${PROJECT_DATA} PRIVATE ${PROJECT_SOURCE_DIR})
 set_target_properties(${PROJECT_DATA} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 target_link_libraries(${PROJECT_DATA} PRIVATE ${OPENGL_LIBRARIES})
 
-# check compiler intrinsics and link against them
+target_compile_features(${PROJECT_DATA} PRIVATE cxx_std_17)
+
+# Hardware accelations: SSE and AVX
 check_and_link_AVX(${PROJECT_DATA})
 
-if(OpenMP_CXX_FOUND) 
+if(OpenMP_CXX_FOUND)
 	target_link_libraries(${PROJECT_DATA} PRIVATE OpenMP::OpenMP_CXX)
 endif()
-
-target_compile_features(${PROJECT_DATA} PRIVATE cxx_std_17)
 
 ########### INSTALL ##############
 install(TARGETS ${PROJECT_DATA}

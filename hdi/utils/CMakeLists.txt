@@ -14,10 +14,10 @@ endif (UNIX)
 
 target_compile_features(${PROJECT_UTILS} PRIVATE cxx_std_17)
 
-# check compiler intrinsics and link against them
+# Hardware accelations: SSE and AVX
 check_and_link_AVX(${PROJECT_UTILS})
 
-if(OpenMP_CXX_FOUND) 
+if(OpenMP_CXX_FOUND)
 	target_link_libraries(${PROJECT_UTILS} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 

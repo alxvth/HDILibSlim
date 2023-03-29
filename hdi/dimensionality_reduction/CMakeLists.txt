@@ -8,10 +8,12 @@ add_library(${PROJECT_DR} STATIC ${HeaderFiles} ${SourceFiles} )
 
 target_include_directories(${PROJECT_DR} PRIVATE ${PROJECT_SOURCE_DIR})
 
-# check compiler intrinsics and link against them
+target_compile_features(${PROJECT_DR} PRIVATE cxx_std_17)
+
+# Hardware accelations: SSE and AVX
 check_and_link_AVX(${PROJECT_DR})
 
-if(OpenMP_CXX_FOUND) 
+if(OpenMP_CXX_FOUND)
 	target_link_libraries(${PROJECT_DR} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
@@ -30,8 +32,6 @@ get_filename_component(ANNOY_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../exte
 target_include_directories(${PROJECT_DR} PRIVATE ${ANNOY_INCLUDE_DIR})
 target_compile_definitions(${PROJECT_DR} PRIVATE __USE_ANNOY__)
 message (STATUS "Annoy: " ${ANNOY_INCLUDE_DIR})
-
-target_compile_features(${PROJECT_DR} PRIVATE cxx_std_17)
 
 ########### INSTALL ##############
 #set_target_properties(${PROJECT_DR} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
