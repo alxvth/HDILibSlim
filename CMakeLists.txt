@@ -1,7 +1,5 @@
 cmake_minimum_required (VERSION 3.21)
 
-# Specify vcpkg toolchain file
-
 set(PROJECT_HDILibSlim "HDILibSlim")
 PROJECT(${PROJECT_HDILibSlim} C CXX)
 
