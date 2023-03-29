@@ -11,7 +11,7 @@ target_include_directories(${PROJECT_DR} PRIVATE ${PROJECT_SOURCE_DIR})
 target_compile_features(${PROJECT_DR} PRIVATE cxx_std_17)
 
 # Hardware accelations: SSE and AVX
-check_and_link_AVX(${PROJECT_DR})
+check_and_link_AVX(${PROJECT_DR} ${USE_AVX})
 
 if(OpenMP_CXX_FOUND)
 	target_link_libraries(${PROJECT_DR} PRIVATE OpenMP::OpenMP_CXX)

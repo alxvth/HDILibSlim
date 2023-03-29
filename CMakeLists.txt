@@ -1,5 +1,7 @@
 cmake_minimum_required (VERSION 3.21)
 
+set(USE_AVX ON CACHE BOOL "Use AVX instructions sets if available")
+
 set(PROJECT_HDILibSlim "HDILibSlim")
 PROJECT(${PROJECT_HDILibSlim} C CXX)
 

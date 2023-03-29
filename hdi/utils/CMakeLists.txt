@@ -15,7 +15,7 @@ endif (UNIX)
 target_compile_features(${PROJECT_UTILS} PRIVATE cxx_std_17)
 
 # Hardware accelations: SSE and AVX
-check_and_link_AVX(${PROJECT_UTILS})
+check_and_link_AVX(${PROJECT_UTILS}  ${USE_AVX})
 
 if(OpenMP_CXX_FOUND)
 	target_link_libraries(${PROJECT_UTILS} PRIVATE OpenMP::OpenMP_CXX)
