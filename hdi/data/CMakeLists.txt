@@ -9,16 +9,17 @@ add_library(${PROJECT_DATA} STATIC ${HeaderFiles} ${SourceFiles} )
 target_include_directories(${PROJECT_DATA} PRIVATE ${PROJECT_SOURCE_DIR})
 
 set_target_properties(${PROJECT_DATA} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
-target_link_libraries(${PROJECT_DATA} PRIVATE ${OPENGL_LIBRARIES})
 
 target_compile_features(${PROJECT_DATA} PRIVATE cxx_std_17)
-
-# Hardware accelations: SSE and AVX
-check_and_link_AVX(${PROJECT_DATA} ${USE_AVX})
 
 if(OpenMP_CXX_FOUND)
 	target_link_libraries(${PROJECT_DATA} PRIVATE OpenMP::OpenMP_CXX)
 endif()
+
+# Hardware accelations: SSE and AVX
+check_and_link_AVX(${PROJECT_DATA} ${USE_AVX})
+
+target_link_libraries(${PROJECT_DATA} PRIVATE ${OPENGL_LIBRARIES})
 
 ########### INSTALL ##############
 install(TARGETS ${PROJECT_DATA}

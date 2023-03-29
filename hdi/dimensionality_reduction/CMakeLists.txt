@@ -8,14 +8,16 @@ add_library(${PROJECT_DR} STATIC ${HeaderFiles} ${SourceFiles} )
 
 target_include_directories(${PROJECT_DR} PRIVATE ${PROJECT_SOURCE_DIR})
 
-target_compile_features(${PROJECT_DR} PRIVATE cxx_std_17)
+#set_target_properties(${PROJECT_DR} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 
-# Hardware accelations: SSE and AVX
-check_and_link_AVX(${PROJECT_DR} ${USE_AVX})
+target_compile_features(${PROJECT_DR} PRIVATE cxx_std_17)
 
 if(OpenMP_CXX_FOUND)
 	target_link_libraries(${PROJECT_DR} PRIVATE OpenMP::OpenMP_CXX)
 endif()
+
+# Hardware accelations: SSE and AVX
+check_and_link_AVX(${PROJECT_DR} ${USE_AVX})
 
 if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -34,12 +36,11 @@ target_compile_definitions(${PROJECT_DR} PRIVATE __USE_ANNOY__)
 message (STATUS "Annoy: " ${ANNOY_INCLUDE_DIR})
 
 ########### INSTALL ##############
-#set_target_properties(${PROJECT_DR} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
-
 install(TARGETS ${PROJECT_DR}
     EXPORT ${PROJECT_DR}Targets
     LIBRARY DESTINATION lib/$<CONFIGURATION>
     ARCHIVE DESTINATION lib/$<CONFIGURATION>
+#    PUBLIC_HEADER DESTINATION include/hdi/dimensionality_reduction
     COMPONENT hdidimensionalityreduction
 )
 

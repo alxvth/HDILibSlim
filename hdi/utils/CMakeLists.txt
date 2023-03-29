@@ -8,26 +8,27 @@ add_library(${PROJECT_UTILS} STATIC ${HeaderFiles} ${SourceFiles} ${Resources} )
 
 target_include_directories(${PROJECT_UTILS} PRIVATE ${PROJECT_SOURCE_DIR})
 
-if (UNIX)
-    target_link_libraries (${PROJECT_UTILS} PRIVATE ${CMAKE_DL_LIBS}) # glad.cpp requires -ldl
-endif (UNIX)
+#set_target_properties(${PROJECT_UTILS} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 
 target_compile_features(${PROJECT_UTILS} PRIVATE cxx_std_17)
-
-# Hardware accelations: SSE and AVX
-check_and_link_AVX(${PROJECT_UTILS}  ${USE_AVX})
 
 if(OpenMP_CXX_FOUND)
 	target_link_libraries(${PROJECT_UTILS} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-########### INSTALL ##############
-#set_target_properties(${PROJECT_UTILS} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
+# Hardware accelations: SSE and AVX
+check_and_link_AVX(${PROJECT_UTILS}  ${USE_AVX})
 
+if (UNIX)
+    target_link_libraries (${PROJECT_UTILS} PRIVATE ${CMAKE_DL_LIBS}) # glad.cpp requires -ldl
+endif (UNIX)
+
+########### INSTALL ##############
 install(TARGETS ${PROJECT_UTILS}
     EXPORT ${PROJECT_UTILS}Targets
     LIBRARY DESTINATION lib/$<CONFIGURATION>
     ARCHIVE DESTINATION lib/$<CONFIGURATION>
+#    PUBLIC_HEADER DESTINATION include/hdi/utils
     COMPONENT hdiutils
 )
 
