@@ -1,6 +1,8 @@
 cmake_minimum_required (VERSION 3.21)
 
 set(USE_AVX ON CACHE BOOL "Use AVX instructions sets if available")
+set(USE_OPENMP ON CACHE BOOL "Use OpenMP - by default ON")
+set(INSTALL_HDILibSlim ON CACHE BOOL "Whether to install the HDILibSlim")
 
 set(PROJECT_HDILibSlim "HDILibSlim")
 PROJECT(${PROJECT_HDILibSlim} C CXX)
@@ -39,13 +41,6 @@ find_package(OpenMP)
 
 if(OPENMP_FOUND)
 	message (STATUS "OpenMP found ${OpenMP_CXX_LIB_NAMES}")
-	include_directories(${OpenMP_CXX_INCLUDE_DIRS})
-	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}") 
-elseif(CMAKE_GENERATOR STREQUAL Xcode)
-	add_definitions( -D__USE_GCD__)
-else()
-    message(WARNING, "OpenMP not found!")
 endif()
 
 # add projects
@@ -58,39 +53,41 @@ add_dependencies(hdidata hdiutils)
 add_dependencies(hdidimensionalityreduction hdiutils)
 add_dependencies(hdidimensionalityreduction hdidata)
 
-# NOTE CMake installs are defined in the sub-projects.
-# ***Create a HdpsCore package to support the find_package command**
+if(INSTALL_HDILibSlim)
+	# NOTE CMake installs are defined in the sub-projects.
+	# ***Create a HdpsCore package to support the find_package command**
 
-# Helper macro for packaging
-include(CMakePackageConfigHelpers)
+	# Helper macro for packaging
+	include(CMakePackageConfigHelpers)
 
-# Generate the version file for use with find_package
-set(hdilibslim_package_version "${HDILibSlim_VERSION}")
-configure_file(${PROJECT_SOURCE_DIR}/cmake/ConfigVersion.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/HDILibSlimConfigVersion.cmake" @ONLY)
-#write_basic_package_version_file(
-#  "${CMAKE_CURRENT_BINARY_DIR}/HDILibSlimConfigVersion.cmake"
-#  VERSION "${HDILibSlim_VERSION}"
-#  # When the hdps core is stable compatibility can 
-#  # change to AnyNewerVersion or SameMajorVersion
-#  COMPATIBILITY ExactVersion
-#)
+	# Generate the version file for use with find_package
+	set(hdilibslim_package_version "${HDILibSlim_VERSION}")
+	configure_file(${PROJECT_SOURCE_DIR}/cmake/ConfigVersion.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/HDILibSlimConfigVersion.cmake" @ONLY)
+	#write_basic_package_version_file(
+	#  "${CMAKE_CURRENT_BINARY_DIR}/HDILibSlimConfigVersion.cmake"
+	#  VERSION "${HDILibSlim_VERSION}"
+	#  # When the hdps core is stable compatibility can 
+	#  # change to AnyNewerVersion or SameMajorVersion
+	#  COMPATIBILITY ExactVersion
+	#)
 
-set(INCLUDE_INSTALL_DIR include)
-set(LIB_INSTALL_DIR lib)
-set(CURRENT_BUILD_DIR "${CMAKE_BINARY_DIR}")
+	set(INCLUDE_INSTALL_DIR include)
+	set(LIB_INSTALL_DIR lib)
+	set(CURRENT_BUILD_DIR "${CMAKE_BINARY_DIR}")
 
-# create config file
-configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/HDILibSlimConfig.cmake.in
-  "${CMAKE_CURRENT_BINARY_DIR}/HDILibSlimConfig.cmake"
-  PATH_VARS INCLUDE_INSTALL_DIR LIB_INSTALL_DIR CURRENT_BUILD_DIR
-  INSTALL_DESTINATION lib/cmake/HDILibSlim
-  NO_CHECK_REQUIRED_COMPONENTS_MACRO
-)
+	# create config file
+	configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/HDILibSlimConfig.cmake.in
+	  "${CMAKE_CURRENT_BINARY_DIR}/HDILibSlimConfig.cmake"
+	  PATH_VARS INCLUDE_INSTALL_DIR LIB_INSTALL_DIR CURRENT_BUILD_DIR
+	  INSTALL_DESTINATION lib/cmake/HDILibSlim
+	  NO_CHECK_REQUIRED_COMPONENTS_MACRO
+	)
 
-# install the package files files
-install(FILES
-          "${CMAKE_CURRENT_BINARY_DIR}/HDILibSlimConfig.cmake"
-          "${CMAKE_CURRENT_BINARY_DIR}/HDILibSlimConfigVersion.cmake"
-        DESTINATION lib/cmake/HDILibSlim
-        COMPONENT HDISlim_PACKAGE
-)
+	# install the package files files
+	install(FILES
+			  "${CMAKE_CURRENT_BINARY_DIR}/HDILibSlimConfig.cmake"
+			  "${CMAKE_CURRENT_BINARY_DIR}/HDILibSlimConfigVersion.cmake"
+			DESTINATION lib/cmake/HDILibSlim
+			COMPONENT HDISlim_PACKAGE
+	)
+endif()
