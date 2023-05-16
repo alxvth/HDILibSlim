@@ -43,7 +43,8 @@
 #include <random>
 #include <unordered_set>
 #include "hdi/data/flow_model.h"
-#include "hdi/data/map_mem_eff.h"
+//#include "hdi/data/map_mem_eff.h"
+#include "hdi/data/sparse_mat.h"
 
 namespace hdi {
   namespace dr {
@@ -55,7 +56,7 @@ namespace hdi {
       Algorithm for the generation of a hierarchical representation of the data as presented in the Hierarchical Stochastic Neighbor Embedding paper
       \author Nicola Pezzotti
     */
-    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::MapMemEff<uint32_t, float> > >
+    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::SparseVec<uint32_t, float> > >
     class HierarchicalSNE {
     public:
       typedef sparse_scalar_matrix sparse_scalar_matrix_type;
@@ -278,10 +279,10 @@ namespace hdi {
       void getInfluencingLandmarksInNextScale(unsigned_int_type scale_id, std::vector<unsigned_int_type>& idxes, std::map<unsigned_int_type, scalar_type>& neighbors)const;
       //! Return a sparse matrix that assigns to each data point the probability of being influenced by landmarks in the top scale. It can be used for interpolation like in hybri schemes
       //! \note a negative value of the scale parameter will force the algo to use the top one
-      void getInterpolationWeights(sparse_scalar_matrix_type& influence, int scale = -1)const;
+      // void getInterpolationWeights(sparse_scalar_matrix_type& influence, int scale = -1)const;
       //! Return a sparse matrix that assigns for a subset of the data points the probability of being influenced by landmarks in the top scale. It can be used for interpolation like in hybri schemes
       //! \note a negative value of the scale parameter will force the algo to use the top one
-      void getInterpolationWeights(const std::vector<unsigned int>& data_points, sparse_scalar_matrix_type& influence, int scale = -1)const;
+      // void getInterpolationWeights(const std::vector<unsigned int>& data_points, sparse_scalar_matrix_type& influence, int scale = -1)const;
       //! Return the influence exercised on the data point by the landmarks in each scale
       void getInfluenceOnDataPoint(unsigned_int_type dp, std::vector<std::unordered_map<unsigned_int_type, scalar_type>>& influence, scalar_type thresh = 0, bool normalized = true)const;
       //! Return the influence exercised on the data point by a subset of landmarks in a given scale

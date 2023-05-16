@@ -43,6 +43,7 @@
 #include <random>
 #include <unordered_set>
 #include "hdi/data/map_mem_eff.h"
+#include "hdi/data/sparse_mat.h"
 
 namespace hdi{
   namespace dr{
@@ -56,7 +57,7 @@ namespace hdi{
       \author Nicola Pezzotti
       \warning Due to numeric limits, the output matrix is not normalized. In order to have a joint-probability distribution each cell must be divided by 2*num_dps
     */
-    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::MapMemEff<unsigned int, float> >>
+    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::SparseVec<uint32_t, float> >>
     class HDJointProbabilityGenerator {
     public:
       typedef scalar scalar_type;

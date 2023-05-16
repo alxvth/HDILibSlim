@@ -34,6 +34,7 @@
 #include <map>
 #include <unordered_map>
 #include "hdi/data/map_mem_eff.h"
+#include "hdi/data/sparse_mat.h"
 
 
 namespace hdi{
@@ -45,13 +46,17 @@ namespace hdi{
     template void computeConnectedComponents(const std::vector<std::unordered_map<unsigned int,float>>& weighted_graph, std::vector<unsigned int>& vertex_to_cluster, std::vector<unsigned int>& cluster_to_vertex, std::vector<unsigned int>& cluster_size, std::map<unsigned int,float>::mapped_type thresh);
     template void computeConnectedComponents(const std::vector<hdi::data::MapMemEff<unsigned int,double>>& weighted_graph, std::vector<unsigned int>& vertex_to_cluster, std::vector<unsigned int>& cluster_to_vertex, std::vector<unsigned int>& cluster_size, std::map<unsigned int,double>::mapped_type thresh);
     template void computeConnectedComponents(const std::vector<hdi::data::MapMemEff<unsigned int,float>>& weighted_graph, std::vector<unsigned int>& vertex_to_cluster, std::vector<unsigned int>& cluster_to_vertex, std::vector<unsigned int>& cluster_size, std::map<unsigned int,float>::mapped_type thresh);
+    // template void computeConnectedComponents(const std::vector<hdi::data::SparseVec<unsigned int,double>>& weighted_graph, std::vector<unsigned int>& vertex_to_cluster, std::vector<unsigned int>& cluster_to_vertex, std::vector<unsigned int>& cluster_size, std::map<unsigned int,double>::mapped_type thresh);
+    // template void computeConnectedComponents(const std::vector<hdi::data::SparseVec<unsigned int,float>>& weighted_graph, std::vector<unsigned int>& vertex_to_cluster, std::vector<unsigned int>& cluster_to_vertex, std::vector<unsigned int>& cluster_size, std::map<unsigned int,float>::mapped_type thresh);
 
-    template void extractSubGraph(const std::vector<std::map<unsigned int,double>>& orig_transition_matrix, const std::vector<unsigned int>& selected_idxes, std::vector<std::map<unsigned int,double>>& new_transition_matrix, std::vector<unsigned int>& new_idxes, double thresh);
-    template void extractSubGraph(const std::vector<std::map<unsigned int,float>>& orig_transition_matrix, const std::vector<unsigned int>& selected_idxes, std::vector<std::map<unsigned int,float>>& new_transition_matrix, std::vector<unsigned int>& new_idxes, float thresh);
-    template void extractSubGraph(const std::vector<std::unordered_map<unsigned int,double>>& orig_transition_matrix, const std::vector<unsigned int>& selected_idxes, std::vector<std::unordered_map<unsigned int,double>>& new_transition_matrix, std::vector<unsigned int>& new_idxes, double thresh);
-    template void extractSubGraph(const std::vector<std::unordered_map<unsigned int,float>>& orig_transition_matrix, const std::vector<unsigned int>& selected_idxes, std::vector<std::unordered_map<unsigned int,float>>& new_transition_matrix, std::vector<unsigned int>& new_idxes, float thresh);
-    template void extractSubGraph(const std::vector<hdi::data::MapMemEff<unsigned int,double>>& orig_transition_matrix, const std::vector<unsigned int>& selected_idxes, std::vector<hdi::data::MapMemEff<unsigned int,double>>& new_transition_matrix, std::vector<unsigned int>& new_idxes, double thresh);
-    template void extractSubGraph(const std::vector<hdi::data::MapMemEff<unsigned int,float>>& orig_transition_matrix, const std::vector<unsigned int>& selected_idxes, std::vector<hdi::data::MapMemEff<unsigned int,float>>& new_transition_matrix, std::vector<unsigned int>& new_idxes, float thresh);
+    // template void extractSubGraph(const std::vector<std::map<unsigned int,double>>& orig_transition_matrix, const std::vector<unsigned int>& selected_idxes, std::vector<std::map<unsigned int,double>>& new_transition_matrix, std::vector<unsigned int>& new_idxes, double thresh);
+    // template void extractSubGraph(const std::vector<std::map<unsigned int,float>>& orig_transition_matrix, const std::vector<unsigned int>& selected_idxes, std::vector<std::map<unsigned int,float>>& new_transition_matrix, std::vector<unsigned int>& new_idxes, float thresh);
+    // template void extractSubGraph(const std::vector<std::unordered_map<unsigned int,double>>& orig_transition_matrix, const std::vector<unsigned int>& selected_idxes, std::vector<std::unordered_map<unsigned int,double>>& new_transition_matrix, std::vector<unsigned int>& new_idxes, double thresh);
+    // template void extractSubGraph(const std::vector<std::unordered_map<unsigned int,float>>& orig_transition_matrix, const std::vector<unsigned int>& selected_idxes, std::vector<std::unordered_map<unsigned int,float>>& new_transition_matrix, std::vector<unsigned int>& new_idxes, float thresh);
+    // template void extractSubGraph(const std::vector<hdi::data::MapMemEff<unsigned int,double>>& orig_transition_matrix, const std::vector<unsigned int>& selected_idxes, std::vector<hdi::data::MapMemEff<unsigned int,double>>& new_transition_matrix, std::vector<unsigned int>& new_idxes, double thresh);
+    // template void extractSubGraph(const std::vector<hdi::data::MapMemEff<unsigned int,float>>& orig_transition_matrix, const std::vector<unsigned int>& selected_idxes, std::vector<hdi::data::MapMemEff<unsigned int,float>>& new_transition_matrix, std::vector<unsigned int>& new_idxes, float thresh);
+    // template void extractSubGraph(const std::vector<hdi::data::SparseVec<unsigned int,double>>& orig_transition_matrix, const std::vector<unsigned int>& selected_idxes, std::vector<hdi::data::SparseVec<unsigned int,double>>& new_transition_matrix, std::vector<unsigned int>& new_idxes, double thresh);
+    // template void extractSubGraph(const std::vector<hdi::data::SparseVec<unsigned int,float>>& orig_transition_matrix, const std::vector<unsigned int>& selected_idxes, std::vector<hdi::data::SparseVec<unsigned int,float>>& new_transition_matrix, std::vector<unsigned int>& new_idxes, float thresh);
 
     template void removeEdgesToUnselectedVertices(std::vector<std::map<unsigned int, float>>& adjacency_matrix, const std::vector<unsigned int>& valid_vertices);
     template void removeEdgesToUnselectedVertices(std::vector<std::map<unsigned int, double>>& adjacency_matrix, const std::vector<unsigned int>& valid_vertices);
@@ -59,6 +64,8 @@ namespace hdi{
     template void removeEdgesToUnselectedVertices(std::vector<std::unordered_map<unsigned int, double>>& adjacency_matrix, const std::vector<unsigned int>& valid_vertices);
     template void removeEdgesToUnselectedVertices(std::vector<hdi::data::MapMemEff<unsigned int, float>>& adjacency_matrix, const std::vector<unsigned int>& valid_vertices);
     template void removeEdgesToUnselectedVertices(std::vector<hdi::data::MapMemEff<unsigned int, double>>& adjacency_matrix, const std::vector<unsigned int>& valid_vertices);
+    // template void removeEdgesToUnselectedVertices(std::vector<hdi::data::SparseVec<unsigned int, float>>& adjacency_matrix, const std::vector<unsigned int>& valid_vertices);
+    // template void removeEdgesToUnselectedVertices(std::vector<hdi::data::SparseVec<unsigned int, double>>& adjacency_matrix, const std::vector<unsigned int>& valid_vertices);
 
     template void expand(const std::vector<std::map<unsigned int, float>>& src, std::vector<std::map<unsigned int, float>>& dst);
     template void expand(const std::vector<std::map<unsigned int, double>>& src, std::vector<std::map<unsigned int, double>>& dst);
@@ -66,6 +73,8 @@ namespace hdi{
     template void expand(const std::vector<std::unordered_map<unsigned int, double>>& src, std::vector<std::unordered_map<unsigned int, double>>& dst);
     template void expand(const std::vector<hdi::data::MapMemEff<unsigned int, float>>& src, std::vector<hdi::data::MapMemEff<unsigned int, float>>& dst);
     template void expand(const std::vector<hdi::data::MapMemEff<unsigned int, double>>& src, std::vector<hdi::data::MapMemEff<unsigned int, double>>& dst);
+    // template void expand(const std::vector<hdi::data::SparseVec<unsigned int, float>>& src, std::vector<hdi::data::SparseVec<unsigned int, float>>& dst);
+    // template void expand(const std::vector<hdi::data::SparseVec<unsigned int, double>>& src, std::vector<hdi::data::SparseVec<unsigned int, double>>& dst);
 
   }
 }

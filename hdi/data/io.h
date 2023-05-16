@@ -52,9 +52,10 @@ namespace hdi{
           io_unsigned_int_type num_elems = static_cast<io_unsigned_int_type>(matrix[j].size());
 
           stream.write(reinterpret_cast<char*>(&num_elems),sizeof(io_unsigned_int_type));
-          for(auto& elem: matrix[j]){
-            io_unsigned_int_type id = static_cast<io_unsigned_int_type>(elem.first);
-            io_scalar_type v = static_cast<io_scalar_type>(elem.second);
+          //for(auto& elem: matrix[j]){
+          for (Eigen::SparseVector<float>::InnerIterator it(matrix[j].memory()); it; ++it) {
+            io_unsigned_int_type id = static_cast<io_unsigned_int_type>(it.index());
+            io_scalar_type v = static_cast<io_scalar_type>(it.value());
             stream.write(reinterpret_cast<char*>(&id),sizeof(io_unsigned_int_type));
             stream.write(reinterpret_cast<char*>(&v),sizeof(io_scalar_type));
           }

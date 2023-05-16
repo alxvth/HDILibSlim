@@ -16,6 +16,8 @@ if(USE_OPENMP AND OpenMP_CXX_FOUND)
 	target_link_libraries(${PROJECT_DR} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
+target_link_libraries(${PROJECT_DR} PRIVATE Eigen3::Eigen)
+
 # Hardware accelations: SSE and AVX
 check_and_link_AVX(${PROJECT_DR} ${USE_AVX})
 

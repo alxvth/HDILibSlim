@@ -88,9 +88,10 @@ namespace hdi {
       for (int i = 0; i < num_pnts; ++i) {
         linear_P.indices.push_back(linear_P.neighbours.size());
         int size = 0;
-        for (const auto& pij : P[i]) {
-          linear_P.neighbours.push_back(pij.first);
-          linear_P.probabilities.push_back(pij.second);
+        //for (const auto& pij : P[i]) {
+        for (Eigen::SparseVector<float>::InnerIterator it(P[i].memory()); it; ++it) {
+          linear_P.neighbours.push_back(it.index());
+          linear_P.probabilities.push_back(it.value());
           size++;
         }
         linear_P.indices.push_back(size);
@@ -249,15 +250,16 @@ namespace hdi {
         double sum_positive_x = 0;
         double sum_positive_y = 0;
 
-        for (const auto& pij : _P[i]) {
-          const float xj = embedding_ptr[pij.first * 2];
-          const float yj = embedding_ptr[pij.first * 2 + 1];
+        //for (const auto& pij : _P[i]) {
+        for (Eigen::SparseVector<float>::InnerIterator it(_P[i].memory()); it; ++it) {
+          const float xj = embedding_ptr[it.index() * 2];
+          const float yj = embedding_ptr[it.index() * 2 + 1];
           const double dist_x = (xi - xj);
           const double dist_y = (yi - yj);
           const double qij = 1 / (1 + dist_x*dist_x + dist_y*dist_y);
 
-          sum_positive_x += pij.second * qij * dist_x / (n_pnts);
-          sum_positive_y += pij.second * qij * dist_y / (n_pnts);
+          sum_positive_x += it.value() * qij * dist_x / (n_pnts);
+          sum_positive_y += it.value() * qij * dist_y / (n_pnts);
         }
 
         //computing negative forces

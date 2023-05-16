@@ -35,6 +35,7 @@
 #include <map>
 #include <unordered_map>
 #include "hdi/data/map_mem_eff.h"
+#include "hdi/data/sparse_mat.h"
 
 namespace hdi{
   namespace dr{

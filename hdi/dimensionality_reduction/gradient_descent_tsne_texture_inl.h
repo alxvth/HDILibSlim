@@ -186,15 +186,15 @@ namespace hdi {
 
       const int n = getNumberOfDataPoints();
       for (int j = 0; j < n; ++j) {
-        for (auto& elem : probabilities[j]) {
-          scalar_type v0 = elem.second;
-          auto iter = probabilities[elem.first].find(j);
+        //for (auto& elem : probabilities[j]) {
+        for (Eigen::SparseVector<float>::InnerIterator it(probabilities[j].memory()); it; ++it) {
+          scalar_type v0 = it.value();
           scalar_type v1 = 0.;
-          if (iter != probabilities[elem.first].end())
-            v1 = iter->second;
+          if (probabilities[it.index()].coeff(j) != 0.0)
+            v1 = probabilities[it.index()].coeff(j);
 
-          _P[j][elem.first] = static_cast<scalar_type>((v0 + v1)*0.5);
-          _P[elem.first][j] = static_cast<scalar_type>((v0 + v1)*0.5);
+          _P[j][it.index()] = static_cast<scalar_type>((v0 + v1)*0.5);
+          _P[it.index()][j] = static_cast<scalar_type>((v0 + v1)*0.5);
         }
       }
     }
@@ -305,8 +305,9 @@ namespace hdi {
       double kl = 0;
 
       for (int i = 0; i < n; ++i) {
-        for (const auto& pij : _P[i]) {
-          uint32_t j = pij.first;
+        //for (const auto& pij : _P[i]) {
+        for (Eigen::SparseVector<float>::InnerIterator it(_P[i].memory()); it; ++it) {
+          uint32_t j = it.index();
 
           // Calculate Qij
           const double euclidean_dist_sq(
@@ -319,7 +320,7 @@ namespace hdi {
           );
           const double v = 1. / (1. + euclidean_dist_sq);
 
-          double p = pij.second / (2 * n);
+          double p = it.value() / (2 * n);
           float klc = p * std::log(p / (v / sum_Q));
           //if (klc > 0.00001)
           //{

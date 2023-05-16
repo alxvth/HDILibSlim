@@ -40,6 +40,7 @@
 #include <map>
 #include <unordered_map>
 #include "hdi/data/map_mem_eff.h"
+#include "hdi/data/sparse_mat.h"
 #include "hdi/utils/assert_by_exception.h"
 
 namespace hdi{

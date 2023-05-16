@@ -41,6 +41,7 @@
 #include <unordered_map>
 #include "hdi/data/embedding.h"
 #include "hdi/data/map_mem_eff.h"
+#include "hdi/data/sparse_mat.h"
 #include "gpgpu_sne/gpgpu_sne_compute.h"
 #include "gpgpu_sne/gpgpu_sne_raster.h"
 #include "tsne_parameters.h"
@@ -59,7 +60,7 @@ namespace hdi {
       typedef enum { RASTER, COMPUTE_SHADER, AUTO_DETECT } GpgpuSneType;
 #endif
       typedef float scalar_type;
-      typedef std::vector<hdi::data::MapMemEff<uint32_t, float>> sparse_scalar_matrix_type;
+      typedef std::vector<hdi::data::SparseVec<uint32_t, float>> sparse_scalar_matrix_type;
       typedef std::vector<scalar_type> scalar_vector_type;
       typedef uint32_t data_handle_type;
 

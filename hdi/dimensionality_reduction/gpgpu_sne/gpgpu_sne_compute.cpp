@@ -89,9 +89,10 @@ namespace hdi {
       for (int i = 0; i < num_pnts; ++i) {
         linear_P.indices.push_back(linear_P.neighbours.size());
         int size = 0;
-        for (const auto& pij : P[i]) {
-          linear_P.neighbours.push_back(pij.first);
-          linear_P.probabilities.push_back(pij.second);
+        //for (const auto& pij : P[i]) {
+        for (Eigen::SparseVector<float>::InnerIterator it(P[i].memory()); it; ++it) {
+          linear_P.neighbours.push_back(it.index());
+          linear_P.probabilities.push_back(it.value());
           size++;
         }
         linear_P.indices.push_back(size);

@@ -46,7 +46,8 @@
 #include <unordered_map>
 #include <numeric>
 #include "hdi/utils/memory_utils.h"
-#include "hdi/data/map_mem_eff.h"
+ //#include "hdi/data/map_mem_eff.h"
+#include "hdi/data/sparse_mat.h"
 #include "hdi/data/map_helpers.h"
 #include "hdi/data/io.h"
 #include "hdi/utils/log_progress.h"
@@ -751,12 +752,14 @@ namespace hdi {
           for (int l = 0; l < scale._transition_matrix.size(); ++l) {
             num_elem_in_Ts += scale._transition_matrix[l].size();
             scalar_type sum(0);
-            for (auto& e : scale._transition_matrix[l]) {
-              sum += e.second;
+            //for (auto& e : scale._transition_matrix[l]) {
+            for (Eigen::SparseVector<float>::InnerIterator it(scale._transition_matrix[l].memory()); it; ++it) {
+              sum += it.value();
             }
-            for (auto& e : scale._transition_matrix[l]) {
-              e.second /= sum;
-              if (e.second > 0.01) {
+            //for (auto& e : scale._transition_matrix[l]) {
+            for (Eigen::SparseVector<float>::InnerIterator it(scale._transition_matrix[l].memory()); it; ++it) {
+              it.valueRef() /= sum;
+              if (it.value() > 0.01) {
                 ++num_effective_elem_in_Ts;
               }
             }
@@ -853,8 +856,9 @@ namespace hdi {
           //caching of the weights
           for (d = 0; d < previous_scale_dp; ++d) {
             num_elem_in_Is += scale._area_of_influence[d].size();
-            for (auto& e : scale._area_of_influence[d]) {
-              scale._landmark_weight[e.first] += e.second;
+            //for (auto& e : scale._area_of_influence[d]) {
+            for (Eigen::SparseVector<float>::InnerIterator it(scale._area_of_influence[d].memory()); it; ++it) {
+              scale._landmark_weight[it.index()] += it.value();
             }
           }
 
@@ -882,13 +886,15 @@ namespace hdi {
               //  #endif //__USE_GCD__
                             //ordered for efficient initialization
               std::map<typename sparse_scalar_matrix_type::value_type::key_type, typename sparse_scalar_matrix_type::value_type::mapped_type> temp_trans_mat; // use map here
-              for (const auto& d : inverse_aoi[l]) {
-                for (const auto& aoi : scale._area_of_influence[d.first]) {
+              //for (const auto& d : inverse_aoi[l]) {
+              for (Eigen::SparseVector<float>::InnerIterator it_d(inverse_aoi[l].memory()); it_d; ++it_d) {
+                //for (const auto& aoi : scale._area_of_influence[it_d.index()]) {
+                for (Eigen::SparseVector<float>::InnerIterator it_aoi(scale._area_of_influence[it_d.index()].memory()); it_aoi; ++it_aoi) {
                   double single_landmark_thresh = (1. / 100.)*_params._transition_matrix_prune_thresh;
-                  if (l != aoi.first) {
-                    if (d.second <= single_landmark_thresh || aoi.second <= single_landmark_thresh)
+                  if (l != it_aoi.index()) {
+                    if (it_d.value() <= single_landmark_thresh || it_aoi.value() <= single_landmark_thresh)
                       continue;
-                    temp_trans_mat[aoi.first] += d.second * aoi.second * previous_scale._landmark_weight[d.first];
+                    temp_trans_mat[it_aoi.index()] += it_d.value() * it_aoi.value() * previous_scale._landmark_weight[it_d.index()];
                   }
                 }
               }
@@ -919,12 +925,14 @@ namespace hdi {
           for (int l = 0; l < scale._transition_matrix.size(); ++l) {
             num_elem_in_Ts += scale._transition_matrix[l].size();
             scalar_type sum(0);
-            for (auto& e : scale._transition_matrix[l]) {
-              sum += e.second;
+            //for (auto& e : scale._transition_matrix[l]) {
+            for (Eigen::SparseVector<float>::InnerIterator it(scale._transition_matrix[l].memory()); it; ++it) {
+              sum += it.value();
             }
-            for (auto& e : scale._transition_matrix[l]) {
-              e.second /= sum;
-              if (e.second > 0.001) {
+            //for (auto& e : scale._transition_matrix[l]) {
+            for (Eigen::SparseVector<float>::InnerIterator it(scale._transition_matrix[l].memory()); it; ++it) {
+              it.valueRef() /= sum;
+              if (it.value() > 0.001) {
                 ++num_effective_elem_in_Ts;
               }
             }
@@ -956,13 +964,14 @@ namespace hdi {
       for (int d = 0; d < _hierarchy[scale_id]._area_of_influence.size(); ++d) {
         double probability = 0;
         // ... check if any landmark index at this scale (s) affects it
-        for (auto& v : _hierarchy[scale_id]._area_of_influence[d]) {
+        //for (auto& v : _hierarchy[scale_id]._area_of_influence[d]) {
+        for (Eigen::SparseVector<float>::InnerIterator it(_hierarchy[scale_id]._area_of_influence[d].memory()); it; ++it) {
           // ... if so sum the probability
           // Performs: https://doi.org/10.1111/cgf.12878 4.2 eqn 8 to calculate total influence F_i 
           // on landmark L_{i}^{s-1} for selection group O (idxes) (follow link to visualize equation)
           // https://latex.codecogs.com/png.image?F_i=\sum_{\mathcal{L}_{j}^{s}\in\mathcal{O}}I^S(i,j)
-          if (set_idxes.find(v.first) != not_found) {
-            probability += v.second;
+          if (set_idxes.find(it.index()) != not_found) {
+            probability += it.value();
           }
         }
         // Record that s-1 landmark index is a neigbor of this idxes set
@@ -985,17 +994,18 @@ namespace hdi {
 
       for (int i = 0; i < idxes.size(); i++)
       {
-        for (auto& v : _hierarchy[next_scale_id]._area_of_influence[idxes[i]]) {
+        //for (auto& v : _hierarchy[next_scale_id]._area_of_influence[idxes[i]]) {
+        for (Eigen::SparseVector<float>::InnerIterator it(_hierarchy[next_scale_id]._area_of_influence[idxes[i]].memory()); it; ++it) {
 
-          neighbors[v.first] += v.second;
+          neighbors[it.index()] += it.value();
         }
       }
 
       for (int i = 0; i < _hierarchy[next_scale_id]._area_of_influence.size(); i++)
       {
-        for (auto& v : _hierarchy[next_scale_id]._area_of_influence[i]) {
-
-          completeSet[v.first] += v.second;
+        //for (auto& v : _hierarchy[next_scale_id]._area_of_influence[i]) {
+        for (Eigen::SparseVector<float>::InnerIterator it(_hierarchy[next_scale_id]._area_of_influence[i].memory()); it; ++it) {
+          completeSet[it.index()] += it.value();
         }
       }
 
@@ -1005,67 +1015,67 @@ namespace hdi {
       }
     }
 
-    template <typename scalar_type, typename sparse_scalar_matrix_type>
-    void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getInterpolationWeights(sparse_scalar_matrix_type& influence, int scale)const {
-      influence.clear();
-      influence.resize(_num_dps);
-
-      scale = (scale < 0) ? (_hierarchy.size() - 1) : scale;
-      checkAndThrowLogic(scale < _hierarchy.size(), "getInterpolationWeights: Invalid scale");
-
-      //#ifdef __USE_GCD__
-      //      std::cout << "GCD dispatch, hierarchical_sne_inl 724.\n";
-      //      dispatch_apply(_num_dps, dispatch_get_global_queue(0, 0), ^(size_t i) {
-      //#else
-#pragma omp parallel for
-      for (int i = 0; i < _num_dps; ++i) {
-        //#endif //__USE_GCD__
-        influence[i] = _hierarchy[1]._area_of_influence[i];
-        for (int s = 2; s <= scale; ++s) {
-          typename sparse_scalar_matrix_type::value_type temp_link;
-          for (auto l : influence[i]) {
-            for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
-              temp_link[new_l.first] += l.second * new_l.second;
-            }
-          }
-          influence[i] = temp_link;
-        }
-      }
-      //#ifdef __USE_GCD__
-      //      );
-      //#endif
-    }
-    template <typename scalar_type, typename sparse_scalar_matrix_type>
-    void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getInterpolationWeights(const std::vector<unsigned int>& data_points, sparse_scalar_matrix_type& influence, int scale)const {
-      auto n = data_points.size();
-      influence.clear();
-      influence.resize(n);
-
-      scale = (scale < 0) ? (_hierarchy.size() - 1) : scale;
-      checkAndThrowLogic(scale < _hierarchy.size(), "getInterpolationWeights: Invalid scale");
-
-      //#ifdef __USE_GCD__
-      //      std::cout << "GCD dispatch, hierarchical_sne_inl 755.\n";
-      //      dispatch_apply(n, dispatch_get_global_queue(0, 0), ^(size_t i) {
-      //#else
-#pragma omp parallel for
-      for (int i = 0; i < n; ++i) {
-        //#endif //__USE_GCD__
-        influence[i] = _hierarchy[1]._area_of_influence[data_points[i]];
-        for (int s = 2; s <= scale; ++s) {
-          typename sparse_scalar_matrix_type::value_type temp_link;
-          for (auto l : influence[i]) {
-            for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
-              temp_link[new_l.first] += l.second * new_l.second;
-            }
-          }
-          influence[i] = temp_link;
-        }
-      }
-      //#ifdef __USE_GCD__
-      //      );
-      //#endif
-    }
+//    template <typename scalar_type, typename sparse_scalar_matrix_type>
+//    void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getInterpolationWeights(sparse_scalar_matrix_type& influence, int scale)const {
+//      influence.clear();
+//      influence.resize(_num_dps);
+//
+//      scale = (scale < 0) ? (_hierarchy.size() - 1) : scale;
+//      checkAndThrowLogic(scale < _hierarchy.size(), "getInterpolationWeights: Invalid scale");
+//
+//      //#ifdef __USE_GCD__
+//      //      std::cout << "GCD dispatch, hierarchical_sne_inl 724.\n";
+//      //      dispatch_apply(_num_dps, dispatch_get_global_queue(0, 0), ^(size_t i) {
+//      //#else
+//#pragma omp parallel for
+//      for (int i = 0; i < _num_dps; ++i) {
+//        //#endif //__USE_GCD__
+//        influence[i] = _hierarchy[1]._area_of_influence[i];
+//        for (int s = 2; s <= scale; ++s) {
+//          typename sparse_scalar_matrix_type::value_type temp_link;
+//          for (auto l : influence[i]) {
+//            for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
+//              temp_link[new_l.first] += l.second * new_l.second;
+//            }
+//          }
+//          influence[i] = temp_link;
+//        }
+//      }
+//      //#ifdef __USE_GCD__
+//      //      );
+//      //#endif
+//    }
+//    template <typename scalar_type, typename sparse_scalar_matrix_type>
+//    void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getInterpolationWeights(const std::vector<unsigned int>& data_points, sparse_scalar_matrix_type& influence, int scale)const {
+//      auto n = data_points.size();
+//      influence.clear();
+//      influence.resize(n);
+//
+//      scale = (scale < 0) ? (_hierarchy.size() - 1) : scale;
+//      checkAndThrowLogic(scale < _hierarchy.size(), "getInterpolationWeights: Invalid scale");
+//
+//      //#ifdef __USE_GCD__
+//      //      std::cout << "GCD dispatch, hierarchical_sne_inl 755.\n";
+//      //      dispatch_apply(n, dispatch_get_global_queue(0, 0), ^(size_t i) {
+//      //#else
+//#pragma omp parallel for
+//      for (int i = 0; i < n; ++i) {
+//        //#endif //__USE_GCD__
+//        influence[i] = _hierarchy[1]._area_of_influence[data_points[i]];
+//        for (int s = 2; s <= scale; ++s) {
+//          typename sparse_scalar_matrix_type::value_type temp_link;
+//          for (auto l : influence[i]) {
+//            for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
+//              temp_link[new_l.first] += l.second * new_l.second;
+//            }
+//          }
+//          influence[i] = temp_link;
+//        }
+//      }
+//      //#ifdef __USE_GCD__
+//      //      );
+//      //#endif
+//    }
 
     template <typename scalar_type, typename sparse_scalar_matrix_type>
     void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getInfluenceOnDataPoint(unsigned_int_type dp, std::vector<std::unordered_map<unsigned_int_type, scalar_type>>& influence, scalar_type thresh, bool normalized)const {
@@ -1076,8 +1086,9 @@ namespace hdi {
         return;
       }
 
-      for (auto& v : _hierarchy[1]._area_of_influence[dp]) {
-        influence[1][v.first] = v.second;
+      //for (auto& v : _hierarchy[1]._area_of_influence[dp]) {
+      for (Eigen::SparseVector<float>::InnerIterator it(_hierarchy[1]._area_of_influence[dp].memory()); it; ++it) {
+        influence[1][it.index()] = it.value();
       }
       if (normalized)
       {
@@ -1088,8 +1099,9 @@ namespace hdi {
       for (int s = 2; s < _hierarchy.size(); ++s) {
         for (auto l : influence[s - 1]) {
           if (l.second >= thresh) {
-            for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
-              influence[s][new_l.first] += l.second * new_l.second;
+            //for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
+            for (Eigen::SparseVector<float>::InnerIterator it(_hierarchy[s]._area_of_influence[l.first].memory()); it; ++it) {
+              influence[s][it.index()] += l.second * it.value();
             }
           }
         }
@@ -1146,12 +1158,13 @@ namespace hdi {
       }
 
       scalar_type maxInfluence = 0;
-      for (auto& v : _hierarchy[1]._area_of_influence[dp]) {
-        influence[1][v.first] = v.second;
-        if (maxInfluence < v.second) {
-          maxInfluence = v.second;
+      //for (auto& v : _hierarchy[1]._area_of_influence[dp]) {
+      for (Eigen::SparseVector<float>::InnerIterator it(_hierarchy[1]._area_of_influence[dp].memory()); it; ++it) {
+        influence[1][it.index()] = it.value();
+        if (maxInfluence < it.value()) {
+          maxInfluence = it.value();
           scale_has_landmark[1] = true;
-          top_landmark_per_scale[1] = v.first;
+          top_landmark_per_scale[1] = it.index();
         }
       }
 
@@ -1165,12 +1178,13 @@ namespace hdi {
         for (auto l : influence[s - 1]) {
           maxInfluence = 0;
           if (l.second >= thresh) {
-            for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
-              influence[s][new_l.first] += l.second * new_l.second;
-              if (maxInfluence < influence[s][new_l.first]) {
-                maxInfluence = influence[s][new_l.first];
+            //for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
+            for (Eigen::SparseVector<float>::InnerIterator it(_hierarchy[s]._area_of_influence[l.first].memory()); it; ++it) {
+              influence[s][it.index()] += l.second * it.value();
+              if (maxInfluence < influence[s][it.index()]) {
+                maxInfluence = influence[s][it.index()];
                 scale_has_landmark[s] = true;
-                top_landmark_per_scale[s] = new_l.first;
+                top_landmark_per_scale[s] = it.index();
               }
             }
           }
@@ -1261,9 +1275,11 @@ namespace hdi {
 
         for (int s = orig_scale + 2; s <= dest_scale; ++s) {
           typename sparse_scalar_matrix_type::value_type temp_link;
-          for (auto l : closeness[i]) {
-            for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
-              temp_link[new_l.first] += l.second * new_l.second;
+          //for (auto l : closeness[i]) {
+          for (Eigen::SparseVector<float>::InnerIterator it_l(closeness[i].memory()); it_l; ++it_l) {
+            //for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
+            for (Eigen::SparseVector<float>::InnerIterator it_new_l(_hierarchy[s]._area_of_influence[it_l.index()].memory()); it_new_l; ++it_new_l) {
+              temp_link[it_new_l.index()] += it_l.value() * it_new_l.value();
             }
           }
           closeness[i] = temp_link;
@@ -1303,7 +1319,12 @@ namespace hdi {
 		  for (int i = 0; i < scale(0).size(); ++i) {
 			  const auto& scale_1_aois = scale(1)._area_of_influence[i];
 			  // Declare a holder for the super scale landmarks aois, using std::vector for quick look-up 
-			  std::vector<std::pair<key_type, mapped_type>> super_aois(scale_1_aois.begin(), scale_1_aois.end());
+			  std::vector<std::pair<key_type, mapped_type>> super_aois;
+        for (Eigen::SparseVector<float>::InnerIterator it(scale_1_aois.memory()); it; ++it)
+        {
+          super_aois.push_back({ it.index(), it.value() });
+        }
+
 			  // Walk the scale hierarchy from super-scale to sub-scale
 			  // For each scale compute the cumulative influence 
 			  // of the landmark points from the lower scale on data point "i" at the current scale.
@@ -1313,9 +1334,10 @@ namespace hdi {
 				  std::unordered_map<key_type, mapped_type> current_aoi_cumulative;
 				  // Factor in the influence of all the super scale landmark aois
 				  for (auto super_aoi : super_aois) {
-					  for (auto current_aoi : scale(s)._area_of_influence[super_aoi.first]) {
+					  //for (auto current_aoi : scale(s)._area_of_influence[super_aoi.first]) {
+            for (Eigen::SparseVector<float>::InnerIterator it_current_aoi(scale(s)._area_of_influence[super_aoi.first].memory()); it_current_aoi; ++it_current_aoi) {
 						  // compute cumulative aoi sum of products 
-						  current_aoi_cumulative[current_aoi.first] += super_aoi.second * current_aoi.second;
+						  current_aoi_cumulative[it_current_aoi.index()] += super_aoi.second * it_current_aoi.value();
 					  }
 				  }
 				  // Copy the influence of the current_aoi_cumulative to the super scale aoi holder for the next iteration
@@ -1422,10 +1444,11 @@ namespace hdi {
         const double rnd_num = distribution(generator);
         unsigned_int_type idx_knn = dp_idx;
         double incremental_prob = 0;
-        for (auto& elem : transition_matrix[dp_idx]) {
-          incremental_prob += elem.second;
+        //for (auto& elem : transition_matrix[dp_idx]) {
+        for (Eigen::SparseVector<float>::InnerIterator it(transition_matrix[dp_idx].memory()); it; ++it) {
+          incremental_prob += it.value();
           if (rnd_num < incremental_prob) {
-            idx_knn = elem.first;
+            idx_knn = it.index();
             break;
           }
         }
@@ -1449,10 +1472,11 @@ namespace hdi {
         const double rnd_num = distribution(generator);
         unsigned_int_type idx_knn = dp_idx;
         double incremental_prob = 0;
-        for (auto& elem : transition_matrix[dp_idx]) {
-          incremental_prob += elem.second;
+        //for (auto& elem : transition_matrix[dp_idx]) {
+        for (Eigen::SparseVector<float>::InnerIterator it(transition_matrix[dp_idx].memory()); it; ++it) {
+          incremental_prob += it.value();
           if (rnd_num < incremental_prob) {
-            idx_knn = elem.first;
+            idx_knn = it.index();
             break;
           }
         }
@@ -1554,17 +1578,18 @@ namespace hdi {
       auto& scale = hsne.scale(scale_id + 1);
 
       for (auto e : _cluster_tree[scale_id][cluster_id_in_vector].landmarks()) {
-        for (auto aoi : scale._area_of_influence[e]) {
+        //for (auto aoi : scale._area_of_influence[e]) {
+        for (Eigen::SparseVector<float>::InnerIterator it_aoi(scale._area_of_influence[e].memory()); it_aoi; ++it_aoi) {
           bool found = false;
           for (int i = 0; i < influence.size(); ++i) {
-            auto it = _cluster_tree[scale_id + 1][i].landmarks().find(aoi.first);
+            auto it = _cluster_tree[scale_id + 1][i].landmarks().find(it_aoi.index());
             if (it != _cluster_tree[scale_id + 1][i].landmarks().end()) {
-              influence[i] += aoi.second;
+              influence[i] += it_aoi.value();
               found = true;
             }
           }
           if (!found) {
-            unclustered_influence += aoi.second;
+            unclustered_influence += it_aoi.value();
           }
         }
       }

@@ -456,8 +456,9 @@ namespace hdi {
     void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::symmetrize(sparse_scalar_matrix& distribution) {
       const int n = distribution.size();
       for (int j = 0; j < n; ++j) {
-        for (auto& e : distribution[j]) {
-          const unsigned int i = e.first;
+        //for (auto& e : distribution[j]) {
+        for (Eigen::SparseVector<float>::InnerIterator it(distribution[j].memory()); it; ++it) {
+          const unsigned int i = it.index();
           scalar new_val = (distribution[j][i] + distribution[i][j])*0.5;
           distribution[j][i] = new_val;
           distribution[i][j] = new_val;
