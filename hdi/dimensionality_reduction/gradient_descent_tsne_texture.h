@@ -54,13 +54,13 @@ namespace hdi {
     Implementation of the tSNE algorithm with sparse and user-defined probabilities
     \author Nicola Pezzotti
     */
+    template <typename sparse_scalar_matrix_type = std::vector<hdi::data::SparseVec<uint32_t, float> > >
     class GradientDescentTSNETexture {
     public:
 #ifndef __APPLE__
       typedef enum { RASTER, COMPUTE_SHADER, AUTO_DETECT } GpgpuSneType;
 #endif
       typedef float scalar_type;
-      typedef std::vector<hdi::data::SparseVec<uint32_t, float>> sparse_scalar_matrix_type;
       typedef std::vector<scalar_type> scalar_vector_type;
       typedef uint32_t data_handle_type;
 
