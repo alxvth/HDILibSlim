@@ -47,7 +47,7 @@ namespace hdi {
     template GpgpuSneCompute<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::GpgpuSneCompute();
 
     template <typename sparse_scalar_matrix_type>
-    Bounds2D GpgpuSneCompute<sparse_scalar_matrix_type>::computeEmbeddingBounds(const embedding_type* embedding, float padding) {
+    typename GpgpuSneCompute<sparse_scalar_matrix_type>::Bounds2D GpgpuSneCompute<sparse_scalar_matrix_type>::computeEmbeddingBounds(const embedding_type* embedding, float padding) {
       const float* const points = embedding->getContainer().data();
 
       Bounds2D bounds;
@@ -81,8 +81,8 @@ namespace hdi {
 
       return bounds;
     }
-    template Bounds2D GpgpuSneCompute<std::vector<hdi::data::SparseVec<uint32_t, float>>>::computeEmbeddingBounds(const embedding_type*, float);
-    template Bounds2D GpgpuSneCompute<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::computeEmbeddingBounds(const embedding_type*, float);
+    template typename GpgpuSneCompute<std::vector<hdi::data::SparseVec<uint32_t, float>>>::Bounds2D GpgpuSneCompute<std::vector<hdi::data::SparseVec<uint32_t, float>>>::computeEmbeddingBounds(const embedding_type*, float);
+    template typename GpgpuSneCompute<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::Bounds2D GpgpuSneCompute<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::computeEmbeddingBounds(const embedding_type*, float);
 
     template <typename sparse_scalar_matrix_type>
     void GpgpuSneCompute<sparse_scalar_matrix_type>::initialize(const embedding_type* embedding, TsneParameters params, const sparse_scalar_matrix_type& P) {

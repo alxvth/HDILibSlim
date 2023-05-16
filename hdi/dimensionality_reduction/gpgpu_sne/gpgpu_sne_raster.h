@@ -57,6 +57,7 @@ namespace hdi {
     Computation class for texture-based t-SNE using rasterization
     \author Julian Thijssen
     */
+    template <typename sparse_scalar_matrix_type = std::vector<hdi::data::SparseVec<uint32_t, float> > >
     class GpgpuSneRaster {
     public:
       struct Point2D {
@@ -73,7 +74,6 @@ namespace hdi {
       };
 
       typedef hdi::data::Embedding<float> embedding_type;
-      typedef std::vector<hdi::data::SparseVec<uint32_t, float>> sparse_scalar_matrix_type;
 
     public:
       GpgpuSneRaster();

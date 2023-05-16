@@ -160,7 +160,7 @@ namespace hdi {
       GpgpuSneCompute<sparse_scalar_matrix_type> _gpgpu_compute_tsne;
       GpgpuSneType _gpgpu_type;
 #endif // __APPLE__
-      GpgpuSneRaster _gpgpu_raster_tsne;
+      GpgpuSneRaster<sparse_scalar_matrix_type> _gpgpu_raster_tsne;
 
       std::array<scalar_type, 4> _temp;
 
