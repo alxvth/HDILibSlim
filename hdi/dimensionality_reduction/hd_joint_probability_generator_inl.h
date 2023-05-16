@@ -44,6 +44,7 @@
 #include <unordered_set>
 #include <numeric>
 #include <thread>
+#include <type_traits>
 #if defined(_OPENMP)
 #include "omp.h"
 #endif

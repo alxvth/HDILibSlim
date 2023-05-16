@@ -41,7 +41,7 @@ namespace hdi{
     namespace IO{
 
 
-      template <typename sparse_scalar_matrix_type = std::vector<hdi::data::MapMemEff<uint32_t, float>>, class output_stream_type>
+      template <typename sparse_scalar_matrix_type = std::vector<hdi::data::SparseVec<uint32_t, float>>, class output_stream_type>
       void saveSparseMatrix(const sparse_scalar_matrix_type& matrix, output_stream_type& stream, utils::AbstractLog* log = nullptr){
         typedef float io_scalar_type;
         typedef uint32_t io_unsigned_int_type;
@@ -54,36 +54,27 @@ namespace hdi{
           io_unsigned_int_type num_elems = static_cast<io_unsigned_int_type>(matrix[j].size());
 
           stream.write(reinterpret_cast<char*>(&num_elems),sizeof(io_unsigned_int_type));
-          for(auto& elem: matrix[j]){
-            io_unsigned_int_type id = static_cast<io_unsigned_int_type>(elem.first);
-            io_scalar_type v = static_cast<io_scalar_type>(elem.second);
-            stream.write(reinterpret_cast<char*>(&id),sizeof(io_unsigned_int_type));
-            stream.write(reinterpret_cast<char*>(&v),sizeof(io_scalar_type));
+          if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+          {
+            for (Eigen::SparseVector<float>::InnerIterator it(matrix[j].memory()); it; ++it) {
+              io_unsigned_int_type id = static_cast<io_unsigned_int_type>(it.index());
+              io_scalar_type v = static_cast<io_scalar_type>(it.value());
+              stream.write(reinterpret_cast<char*>(&id), sizeof(io_unsigned_int_type));
+              stream.write(reinterpret_cast<char*>(&v), sizeof(io_scalar_type));
+            }
+          }
+          else // MapMemEff
+          {
+            for (auto& elem : matrix[j]) {
+              io_unsigned_int_type id = static_cast<io_unsigned_int_type>(elem.first);
+              io_scalar_type v = static_cast<io_scalar_type>(elem.second);
+              stream.write(reinterpret_cast<char*>(&id), sizeof(io_unsigned_int_type));
+              stream.write(reinterpret_cast<char*>(&v), sizeof(io_scalar_type));
+            }
           }
         }
       }
 
-      template <class output_stream_type>
-      void saveSparseMatrix(const std::vector<hdi::data::SparseVec<uint32_t, float>>& matrix, output_stream_type& stream, utils::AbstractLog* log = nullptr){
-        typedef float io_scalar_type;
-        typedef uint32_t io_unsigned_int_type;
-
-        //number of rows first
-        io_unsigned_int_type num_rows = static_cast<io_unsigned_int_type>(matrix.size());
-        stream.write(reinterpret_cast<char*>(&num_rows),sizeof(io_unsigned_int_type));
-        for(int j = 0; j < num_rows; ++j){
-          //number of elements in the current row
-          io_unsigned_int_type num_elems = static_cast<io_unsigned_int_type>(matrix[j].size());
-
-          stream.write(reinterpret_cast<char*>(&num_elems),sizeof(io_unsigned_int_type));
-          for (Eigen::SparseVector<float>::InnerIterator it(matrix[j].memory()); it; ++it) {
-            io_unsigned_int_type id = static_cast<io_unsigned_int_type>(it.index());
-            io_scalar_type v = static_cast<io_scalar_type>(it.value());
-            stream.write(reinterpret_cast<char*>(&id),sizeof(io_unsigned_int_type));
-            stream.write(reinterpret_cast<char*>(&v),sizeof(io_scalar_type));
-          }
-        }
-      }
 
       template <typename scalar_vector, class output_stream_type>
       void saveScalarVector(const scalar_vector& vector, output_stream_type& stream, utils::AbstractLog* log = nullptr){
@@ -164,7 +155,7 @@ namespace hdi{
 
     ///////////////////////////////////////////////////////////////////////
 
-      template <typename sparse_scalar_matrix_type = std::vector<hdi::data::MapMemEff<uint32_t, float>>, class output_stream_type>
+      template <typename sparse_scalar_matrix_type = std::vector<hdi::data::SparseVec<uint32_t, float>>, class output_stream_type>
       void loadSparseMatrix(sparse_scalar_matrix_type& matrix, output_stream_type& stream, utils::AbstractLog* log = nullptr){
         typedef float io_scalar_type;
         typedef uint32_t io_unsigned_int_type;
@@ -173,38 +164,19 @@ namespace hdi{
         io_unsigned_int_type num_rows(0);
         stream.read(reinterpret_cast<char*>(&num_rows),sizeof(io_unsigned_int_type));
         matrix.clear();
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+          matrix.resize(num_rows);
+
         for(int j = 0; j < num_rows; ++j){
           //number of elements in the current row
           io_unsigned_int_type num_elems(0);
           stream.read(reinterpret_cast<char*>(&num_elems),sizeof(io_unsigned_int_type));
+          if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+            matrix[j].resize(num_rows);
+
           for(int i = 0; i < num_elems; ++i){
             io_unsigned_int_type id(0);
             io_scalar_type v(0);
-            stream.read(reinterpret_cast<char*>(&id),sizeof(io_unsigned_int_type));
-            stream.read(reinterpret_cast<char*>(&v),sizeof(io_scalar_type));
-            matrix[j][id] = v;
-          }
-        }
-      }
-
-      template <class output_stream_type>
-      void loadSparseMatrix(std::vector<hdi::data::SparseVec<uint32_t, float>>& matrix, output_stream_type& stream, utils::AbstractLog* log = nullptr){
-        typedef float io_scalar_type;
-        typedef uint32_t io_unsigned_int_type;
-
-        //number of rows first
-        io_unsigned_int_type num_rows(0);
-        stream.read(reinterpret_cast<char*>(&num_rows),sizeof(io_unsigned_int_type));
-        matrix.clear();
-        matrix.resize(num_rows);
-        for(int j = 0; j < num_rows; ++j){
-          //number of elements in the current row
-          io_unsigned_int_type num_elems(0);
-          stream.read(reinterpret_cast<char*>(&num_elems),sizeof(io_unsigned_int_type));
-          matrix[j].resize(num_rows);
-          for(int i = 0; i < num_elems; ++i){
-            io_unsigned_int_type id(0);
-            io_scalar_type v;
             stream.read(reinterpret_cast<char*>(&id),sizeof(io_unsigned_int_type));
             stream.read(reinterpret_cast<char*>(&v),sizeof(io_scalar_type));
             matrix[j][id] = v;

@@ -45,6 +45,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <numeric>
+#include <type_traits>
 #include "hdi/utils/memory_utils.h"
 #include "hdi/data/map_mem_eff.h"
 #include "hdi/data/sparse_mat.h"
@@ -1117,8 +1118,8 @@ namespace hdi {
           if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
           {
             for (Eigen::SparseVector<float>::InnerIterator it_l(influence[i].memory()); it_l; ++it_l) {
-              for (Eigen::SparseVector<float>::InnerIterator it_new_l(_hierarchy[s]._area_of_influence[l.first].memory()); it_new_l; ++it_new_l) {
-                temp_link[it_new_l.index()] += it_l.value * it_new_l.value();
+              for (Eigen::SparseVector<float>::InnerIterator it_new_l(_hierarchy[s]._area_of_influence[it_l.index()].memory()); it_new_l; ++it_new_l) {
+                temp_link[it_new_l.index()] += it_l.value() * it_new_l.value();
               }
             }
           }
@@ -1160,8 +1161,8 @@ namespace hdi {
           if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
           {
             for (Eigen::SparseVector<float>::InnerIterator it_l(influence[i].memory()); it_l; ++it_l) {
-              for (Eigen::SparseVector<float>::InnerIterator it_new_l(_hierarchy[s]._area_of_influence[l.first].memory()); it_new_l; ++it_new_l) {
-                temp_link[it_new_l.index()] += it_l.value * it_new_l.value();
+              for (Eigen::SparseVector<float>::InnerIterator it_new_l(_hierarchy[s]._area_of_influence[it_l.index()].memory()); it_new_l; ++it_new_l) {
+                temp_link[it_new_l.index()] += it_l.value() * it_new_l.value();
               }
             }
           }
@@ -1475,9 +1476,9 @@ namespace hdi {
 		  for (int i = 0; i < scale(0).size(); ++i) {
 			  const auto& scale_1_aois = scale(1)._area_of_influence[i];
 			  // Declare a holder for the super scale landmarks aois, using std::vector for quick look-up 
+        std::vector<std::pair<key_type, mapped_type>> super_aois;
         if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
         {
-          std::vector<std::pair<key_type, mapped_type>> super_aois;
           for (Eigen::SparseVector<float>::InnerIterator it(scale_1_aois.memory()); it; ++it)
           {
             super_aois.push_back({ it.index(), it.value() });
@@ -1485,7 +1486,7 @@ namespace hdi {
         }
         else // MapMemEff
         {
-          std::vector<std::pair<key_type, mapped_type>> super_aois(scale_1_aois.begin(), scale_1_aois.end());
+          super_aois.assign(scale_1_aois.begin(), scale_1_aois.end());
         }
 
 			  // Walk the scale hierarchy from super-scale to sub-scale
