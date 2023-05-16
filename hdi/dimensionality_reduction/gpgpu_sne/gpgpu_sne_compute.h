@@ -48,28 +48,30 @@ namespace hdi {
   namespace dr {
     struct LinearProbabilityMatrix;
 
+    struct Point2D {
+      float x, y;
+    };
+
+
+    struct Bounds2D {
+      Point2D min;
+      Point2D max;
+
+      Point2D getRange() {
+        return Point2D{ max.x - min.x, max.y - min.y };
+      }
+    };
+
     //! Computation class for texture-based t-SNE using compute shaders
     /*!
     Computation class for texture-based t-SNE using compute shaders
     \author Julian Thijssen
     */
+    template <typename sparse_scalar_matrix_type = std::vector<hdi::data::SparseVec<uint32_t, float> > >
     class GpgpuSneCompute {
     public:
-      struct Point2D {
-        float x, y;
-      };
-
-      struct Bounds2D {
-        Point2D min;
-        Point2D max;
-
-        Point2D getRange() {
-          return Point2D{ max.x - min.x, max.y - min.y };
-        }
-      };
 
       typedef hdi::data::Embedding<float> embedding_type;
-      typedef std::vector<hdi::data::SparseVec<uint32_t, float>> sparse_scalar_matrix_type;
 
     public:
       GpgpuSneCompute();
