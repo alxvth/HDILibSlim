@@ -67,15 +67,31 @@ namespace hdi{
             ++c_size;
             auto idx = queue.front();
             queue.pop();
-            for(auto& v: weighted_graph[idx]){
-              if(vertex_to_cluster[v.first] != invalid){
-                continue;
-              }
-              if(v.second > thresh){
-                vertex_to_cluster[v.first] = cluster_idx;
-                queue.push(v.first);
+            if constexpr (std::is_same_v<map_type, hdi::data::SparseVec<uint32_t, float>>)
+            {
+              for (Eigen::SparseVector<float>::InnerIterator it(weighted_graph[idx].memory()); it; ++it) {
+                if (vertex_to_cluster[it.index()] != invalid) {
+                  continue;
+                }
+                if (it.value() > thresh) {
+                  vertex_to_cluster[it.index()] = cluster_idx;
+                  queue.push(it.index());
+                }
               }
             }
+            else // MapMemEff
+            {
+              for (auto& v : weighted_graph[idx]) {
+                if (vertex_to_cluster[v.first] != invalid) {
+                  continue;
+                }
+                if (v.second > thresh) {
+                  vertex_to_cluster[v.first] = cluster_idx;
+                  queue.push(v.first);
+                }
+              }
+            }
+
           }
           cluster_size.push_back(c_size);
           ++cluster_idx;
@@ -84,8 +100,8 @@ namespace hdi{
     }
 
 
-//    template <class map_type>
-    void extractSubGraph(const std::vector<hdi::data::SparseVec<unsigned int, float>>& orig_transition_matrix, const std::vector<unsigned int>& selected_idxes, std::vector<hdi::data::SparseVec<unsigned int, float>>& new_transition_matrix, std::vector<unsigned int>& new_idxes, typename float thresh)
+    template <class map_type>
+    void extractSubGraph(const std::vector<map_type>& orig_transition_matrix, const std::vector<unsigned int>& selected_idxes, std::vector<map_type>& new_transition_matrix, std::vector<unsigned int>& new_idxes, typename map_type::mapped_type thresh)
     {
       new_transition_matrix.clear();
       new_idxes.clear();
@@ -97,57 +113,108 @@ namespace hdi{
         new_idxes.push_back(id);
       }
 
-      //Vertices that are connected to a selected vertex
-      for(auto& e: map_selected_idxes){
-        //for(auto& row_elem: orig_transition_matrix[e.first]){
-        for (Eigen::SparseVector<float>::InnerIterator it(orig_transition_matrix[e.first].memory()); it; ++it) {
-          if(it.value() > thresh){
-            if(map_selected_idxes.find(it.index()) == map_selected_idxes.end() &&
-               map_non_selected_idxes.find(it.index()) == map_non_selected_idxes.end()){
-              map_non_selected_idxes[it.index()] = new_idxes.size();
-              new_idxes.push_back(it.index());
+      if constexpr (std::is_same_v<map_type, hdi::data::SparseVec<uint32_t, float>>)
+      {
+        //Vertices that are connected to a selected vertex
+        for (auto& e : map_selected_idxes) {
+          for (Eigen::SparseVector<float>::InnerIterator it(orig_transition_matrix[e.first].memory()); it; ++it) {
+            if (it.value() > thresh) {
+              if (map_selected_idxes.find(it.index()) == map_selected_idxes.end() &&
+                map_non_selected_idxes.find(it.index()) == map_non_selected_idxes.end()) {
+                map_non_selected_idxes[it.index()] = new_idxes.size();
+                new_idxes.push_back(it.index());
+              }
             }
           }
         }
-      }
 
-      //Now that I have the maps, I generate the new transition matrix
-      new_transition_matrix.resize(map_non_selected_idxes.size() + map_selected_idxes.size());
-      for(auto e: map_selected_idxes){
-        //for(auto row_elem: orig_transition_matrix[e.first]){
-        for (Eigen::SparseVector<float>::InnerIterator it(orig_transition_matrix[e.first].memory()); it; ++it) {
-            if(map_selected_idxes.find(it.index()) != map_selected_idxes.end()){
-            new_transition_matrix[e.second][map_selected_idxes[it.index()]] = it.value();
-          }else if(map_non_selected_idxes.find(it.index()) != map_non_selected_idxes.end()){
-            new_transition_matrix[e.second][map_non_selected_idxes[it.index()]] = it.value();
+        //Now that I have the maps, I generate the new transition matrix
+        new_transition_matrix.resize(map_non_selected_idxes.size() + map_selected_idxes.size());
+        for (auto e : map_selected_idxes) {
+          for (Eigen::SparseVector<float>::InnerIterator it(orig_transition_matrix[e.first].memory()); it; ++it) {
+            if (map_selected_idxes.find(it.index()) != map_selected_idxes.end()) {
+              new_transition_matrix[e.second][map_selected_idxes[it.index()]] = it.value();
+            }
+            else if (map_non_selected_idxes.find(it.index()) != map_non_selected_idxes.end()) {
+              new_transition_matrix[e.second][map_non_selected_idxes[it.index()]] = it.value();
+            }
+          }
+        }
+        for (auto e : map_non_selected_idxes) {
+          for (Eigen::SparseVector<float>::InnerIterator it(orig_transition_matrix[e.first].memory()); it; ++it) {
+            if (map_selected_idxes.find(it.index()) != map_selected_idxes.end()) {
+              new_transition_matrix[e.second][map_selected_idxes[it.index()]] = it.value();
+            }
+            else if (map_non_selected_idxes.find(it.index()) != map_non_selected_idxes.end()) {
+              new_transition_matrix[e.second][map_non_selected_idxes[it.index()]] = it.value();
+            }
+          }
+        }
+
+        //Finally, the new transition matrix must be normalized
+        double sum = 0;
+        for (auto& row : new_transition_matrix) {
+          for (Eigen::SparseVector<float>::InnerIterator it(row.memory()); it; ++it) {
+            sum += it.value();
+          }
+        }
+        for (auto& row : new_transition_matrix) {
+          for (Eigen::SparseVector<float>::InnerIterator it(row.memory()); it; ++it) {
+            row[it.index()] = new_transition_matrix.size() * it.value() / sum;
           }
         }
       }
-      for(auto e: map_non_selected_idxes){
-        //for(auto row_elem: orig_transition_matrix[e.first]){
-        for (Eigen::SparseVector<float>::InnerIterator it(orig_transition_matrix[e.first].memory()); it; ++it) {
-          if(map_selected_idxes.find(it.index()) != map_selected_idxes.end()){
-            new_transition_matrix[e.second][map_selected_idxes[it.index()]] = it.value();
-          }else if(map_non_selected_idxes.find(it.index()) != map_non_selected_idxes.end()){
-            new_transition_matrix[e.second][map_non_selected_idxes[it.index()]] = it.value();
+      else // MapMemEff
+      {
+        //Vertices that are connected to a selected vertex
+        for (auto& e : map_selected_idxes) {
+          for (auto& row_elem : orig_transition_matrix[e.first]) {
+            if (row_elem.second > thresh) {
+              if (map_selected_idxes.find(row_elem.first) == map_selected_idxes.end() &&
+                map_non_selected_idxes.find(row_elem.first) == map_non_selected_idxes.end()) {
+                map_non_selected_idxes[row_elem.first] = new_idxes.size();
+                new_idxes.push_back(row_elem.first);
+              }
+            }
+          }
+        }
+        //Now that I have the maps, I generate the new transition matrix
+        new_transition_matrix.resize(map_non_selected_idxes.size() + map_selected_idxes.size());
+        for (auto e : map_selected_idxes) {
+          for (auto row_elem : orig_transition_matrix[e.first]) {
+            if (map_selected_idxes.find(row_elem.first) != map_selected_idxes.end()) {
+              new_transition_matrix[e.second][map_selected_idxes[row_elem.first]] = row_elem.second;
+            }
+            else if (map_non_selected_idxes.find(row_elem.first) != map_non_selected_idxes.end()) {
+              new_transition_matrix[e.second][map_non_selected_idxes[row_elem.first]] = row_elem.second;
+            }
+          }
+        }
+        for (auto e : map_non_selected_idxes) {
+          for (auto row_elem : orig_transition_matrix[e.first]) {
+            if (map_selected_idxes.find(row_elem.first) != map_selected_idxes.end()) {
+              new_transition_matrix[e.second][map_selected_idxes[row_elem.first]] = row_elem.second;
+            }
+            else if (map_non_selected_idxes.find(row_elem.first) != map_non_selected_idxes.end()) {
+              new_transition_matrix[e.second][map_non_selected_idxes[row_elem.first]] = row_elem.second;
+            }
+          }
+        }
+
+        //Finally, the new transition matrix must be normalized
+        double sum = 0;
+        for (auto& row : new_transition_matrix) {
+          for (auto& elem : row) {
+            sum += elem.second;
+          }
+        }
+        for (auto& row : new_transition_matrix) {
+          for (auto& elem : row) {
+            elem.second = new_transition_matrix.size() * elem.second / sum;
           }
         }
       }
 
-      //Finally, the new transition matrix must be normalized
-      double sum = 0;
-      for(auto& row: new_transition_matrix){
-        //for (auto& elem : row) {
-        for (Eigen::SparseVector<float>::InnerIterator it(row.memory()); it; ++it) {
-          sum += it.value();
-        }
-      }
-      for(auto& row: new_transition_matrix){
-        //for(auto& elem: row){
-        for (Eigen::SparseVector<float>::InnerIterator it(row.memory()); it; ++it) {
-          row[it.index()] = new_transition_matrix.size() * it.value()/sum;
-        }
-      }
     }
 
     template <class sparse_scalar_matrix_type>
@@ -160,12 +227,26 @@ namespace hdi{
 
       sparse_scalar_matrix_type new_map(adjacency_matrix.size());
       for(int i = 0; i < adjacency_matrix.size(); ++i){
-        for (auto& elem: adjacency_matrix[i]){
-          auto search_iter = valid_set.find(elem.first);
-          if(search_iter != valid_set.end()){
-            new_map[i][search_iter->second] = elem.second;
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (Eigen::SparseVector<float>::InnerIterator it(adjacency_matrix[i].memory()); it; ++it) {
+            auto search_iter = valid_set.find(it.index());
+            if (search_iter != valid_set.end()) {
+              new_map[i][search_iter->second] = it.value();
+            }
+          }
+
+        }
+        else // MapMemEff
+        {
+          for (auto& elem : adjacency_matrix[i]) {
+            auto search_iter = valid_set.find(elem.first);
+            if (search_iter != valid_set.end()) {
+              new_map[i][search_iter->second] = elem.second;
+            }
           }
         }
+
       }
       adjacency_matrix = new_map;
 
@@ -198,12 +279,25 @@ namespace hdi{
       //normalize
       for(int j = 0; j < dst.size(); ++j){
         double sum = 0;
-        for(auto& it: dst[j]){
-          sum += it.second;
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (Eigen::SparseVector<float>::InnerIterator it(dst[j].memory()); it; ++it) {
+            sum += it.value();
+          }
+          for (Eigen::SparseVector<float>::InnerIterator it(dst[j].memory()); it; ++it) {
+            it.valueRef() /= sum;
+          }
         }
-        for(auto& it: dst[j]){
-          it.second /= sum;
+        else // MapMemEff
+        {
+          for (auto& it : dst[j]) {
+            sum += it.second;
+          }
+          for (auto& it : dst[j]) {
+            it.second /= sum;
+          }
         }
+
       }
 
 
