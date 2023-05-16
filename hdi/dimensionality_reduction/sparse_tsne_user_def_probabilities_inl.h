@@ -38,6 +38,7 @@
 #include "hdi/utils/math_utils.h"
 #include "hdi/utils/log_helper_functions.h"
 #include "hdi/utils/scoped_timers.h"
+#include "hdi/data/sparse_mat.h"
 #include "sptree.h"
 #include <random>
 
@@ -149,16 +150,32 @@ namespace hdi{
       const int n = getNumberOfDataPoints();
       //Can be improved by using the simmetry of the matrix (half the memory) //TODO
       for(int j = 0; j < n; ++j){
-        for(auto& elem: probabilities[j]){
-          scalar_type v0 = elem.second;
-          auto iter = probabilities[elem.first].find(j);
-          scalar_type v1 = 0.;
-          if(iter != probabilities[elem.first].end())
-            v1 = iter->second;
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (Eigen::SparseVector<float>::InnerIterator it(probabilities[j].memory()); it; ++it) {
+            scalar_type v0 = it.value();
+            scalar_type v1 = 0.;
+            if (probabilities[it.index()].coeff(j) != 0.0)
+              v1 = probabilities[it.index()].coeff(j);
 
-          _P[j][elem.first] = static_cast<scalar_type>((v0+v1)*0.5);
-          _P[elem.first][j] = static_cast<scalar_type>((v0+v1)*0.5);
+            _P[j][it.index()] = static_cast<scalar_type>((v0 + v1) * 0.5);
+            _P[it.index()][j] = static_cast<scalar_type>((v0 + v1) * 0.5);
+          }
         }
+        else // MapMemEff
+        {
+          for (auto& elem : probabilities[j]) {
+            scalar_type v0 = elem.second;
+            auto iter = probabilities[elem.first].find(j);
+            scalar_type v1 = 0.;
+            if (iter != probabilities[elem.first].end())
+              v1 = iter->second;
+
+            _P[j][elem.first] = static_cast<scalar_type>((v0 + v1) * 0.5);
+            _P[elem.first][j] = static_cast<scalar_type>((v0 + v1) * 0.5);
+          }
+        }
+
       }
     }
 
@@ -302,17 +319,37 @@ namespace hdi{
             _gradient[i * dim + d] += static_cast<scalar_type>(-4*negative);
           }
         }
-        for(auto& elem: _P[i]){
-          for(int d = 0; d < dim; ++d){
-            const int j = elem.first;
-            const int idx = i*n + j;
-            const double distance((*_embedding_container)[i * dim + d] - (*_embedding_container)[j * dim + d]);
-            double p_ij = elem.second/n;
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (Eigen::SparseVector<float>::InnerIterator it(_P[i].memory()); it; ++it) {
+            for (int d = 0; d < dim; ++d) {
+              const int j = it.index();
+              const int idx = i * n + j;
+              const double distance((*_embedding_container)[i * dim + d] - (*_embedding_container)[j * dim + d]);
+              double p_ij = it.value() / n;
 
-            const double positive(p_ij * _Q[idx] * distance);
-            _gradient[i * dim + d] += static_cast<scalar_type>(4*exaggeration*positive);
+              const double positive(p_ij * _Q[idx] * distance);
+              _gradient[i * dim + d] += static_cast<scalar_type>(4 * exaggeration * positive);
+            }
           }
+
         }
+        else // MapMemEff
+        {
+          for (auto& elem : _P[i]) {
+            for (int d = 0; d < dim; ++d) {
+              const int j = elem.first;
+              const int idx = i * n + j;
+              const double distance((*_embedding_container)[i * dim + d] - (*_embedding_container)[j * dim + d]);
+              double p_ij = elem.second / n;
+
+              const double positive(p_ij * _Q[idx] * distance);
+              _gradient[i * dim + d] += static_cast<scalar_type>(4 * exaggeration * positive);
+            }
+          }
+
+        }
+
       }
     }
 
