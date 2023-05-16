@@ -40,6 +40,7 @@
 #include "hdi/utils/scoped_timers.h"
 #include "sptree.h"
 #include <random>
+#include <type_traits>
 
 namespace hdi {
   namespace dr {

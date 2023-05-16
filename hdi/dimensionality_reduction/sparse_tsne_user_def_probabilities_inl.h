@@ -41,6 +41,7 @@
 #include "hdi/data/sparse_mat.h"
 #include "sptree.h"
 #include <random>
+#include <type_traits>
 
 #ifdef __USE_GCD__
 #include <dispatch/dispatch.h>

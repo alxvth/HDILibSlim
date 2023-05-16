@@ -69,6 +69,7 @@
 #include <vector>
 #include <unordered_map>
 #include <map>
+#include <type_traits>
 #include "hdi/data/sparse_mat.h"
 
 #ifdef __USE_GCD__

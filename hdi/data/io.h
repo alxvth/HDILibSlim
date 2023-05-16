@@ -35,6 +35,7 @@
 
 #include "hdi/data/sparse_mat.h"
 #include "hdi/data/map_mem_eff.h"
+#include <type_traits>
 
 namespace hdi{
   namespace data{

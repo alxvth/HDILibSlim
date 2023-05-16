@@ -40,6 +40,7 @@
 #include <cmath>
 #include <math.h> 
 #include <iostream>
+#include <type_traits>
 #include "hdi/data/sparse_mat.h"
 
 namespace hdi{

@@ -38,6 +38,7 @@
 #include <queue>
 #include <map>
 #include <unordered_map>
+#include <type_traits>
 #include <cmath>
 #include "hdi/utils/math_utils.h"
 #include "hdi/data/sparse_mat.h"
