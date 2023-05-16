@@ -186,6 +186,9 @@ namespace hdi {
 
       const int n = getNumberOfDataPoints();
       for (int j = 0; j < n; ++j) {
+        _P[j].resize(n);
+      }
+      for (int j = 0; j < n; ++j) {
         //for (auto& elem : probabilities[j]) {
         for (Eigen::SparseVector<float>::InnerIterator it(probabilities[j].memory()); it; ++it) {
           scalar_type v0 = it.value();

@@ -24,6 +24,7 @@ namespace hdi {
       size_t size()const { return _memory.nonZeros(); }
       size_t capacity()const { return _memory.size(); }
       void shrink_to_fit() { _memory.data().squeeze(); }
+      void resize(size_t k) { _memory.resize(k); }
 
       //iterators are always constant
       //iterator begin() { return iterator it(_memory); }
