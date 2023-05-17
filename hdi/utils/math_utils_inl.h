@@ -135,7 +135,7 @@ namespace hdi{
       for(int i = 0; i < matrix.size(); ++i){
 #endif //__USE_GCD__
         vector_type distr(n,0);
-        distr[i] = n;
+        distr[i] = static_cast<vector_type::value_type>(n);
         computeStationaryDistribution(matrix,&distr,5,1);
         res[i] = distr[i]/n;
       }
