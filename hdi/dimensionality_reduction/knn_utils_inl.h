@@ -126,7 +126,7 @@ namespace hdi{
 
         int search_k = nn * params.num_trees;
 
-        Annoy::AnnoyIndexInterface<int32_t, double>* tree = NULL;
+        Annoy::AnnoyIndexInterface<int32_t, double>* tree = nullptr;
         switch (params.metric) {
         case hdi::dr::KNN_METRIC_EUCLIDEAN:
           if (logger) utils::secureLog(logger, "Computing approximated knn with Annoy using Euclidean distances ...");
@@ -198,8 +198,8 @@ namespace hdi{
               distances_squared[n * nn + m] = closest_distances[m] * closest_distances[m];
             }
           }
-          delete tree;
         }
+        delete tree;
       }
 
     }

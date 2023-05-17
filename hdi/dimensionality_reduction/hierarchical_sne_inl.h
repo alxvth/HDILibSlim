@@ -292,12 +292,12 @@ namespace hdi {
       scalar_vector_type distance_based_probabilities;
       std::vector<int> neighborhood_graph;
 
-      knn_params ann_params{ _params._aknn_algorithm, _params._aknn_metric, _params._num_neighbors, _params._aknn_algorithmP1, _params._aknn_algorithmP2, _params._aknn_num_trees };
+      unsigned_int_type nn = _params._num_neighbors + 1;
+
+      knn_params ann_params{ _params._aknn_algorithm, _params._aknn_metric, nn, _params._aknn_algorithmP1, _params._aknn_algorithmP2, _params._aknn_num_trees };
       computeHighDimensionalDistances<scalar_type, int, HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::Statistics>(_high_dimensional_data, _dimensionality, _num_dps, ann_params, distance_based_probabilities, neighborhood_graph, &_statistics, _logger);
       computeFMC(distance_based_probabilities, neighborhood_graph);
       
-      unsigned_int_type nn = _params._num_neighbors + 1;
-
       {
         utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_fmc_time);
         utils::secureLog(_logger, "Creating transition matrix...");
@@ -315,6 +315,10 @@ namespace hdi {
         for (int i = 0; i < _num_dps; ++i) {
           //#endif //__USE_GCD__
           scalar_type sum = 0;
+
+          if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+            scale._transition_matrix[i].resize(_num_dps);
+
           for (int n = 1; n < nn; ++n) {
             int idx = i * nn + n;
             auto v = distance_based_probabilities[idx];
@@ -369,6 +373,15 @@ namespace hdi {
       scale._previous_scale_to_landmark_idx.resize(previous_scale_dp, -1);
       scale._transition_matrix.resize(num_landmarks);
       scale._area_of_influence.resize(previous_scale_dp);
+
+      if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+      {
+        for (int i = 0; i < num_landmarks; ++i)
+          scale._transition_matrix[i].resize(num_landmarks);
+
+        for (int i = 0; i < previous_scale_dp; ++i)
+          scale._area_of_influence[i].resize(num_landmarks);
+      }
 
       int num_tries = 0;
       selected_landmarks = 0;
@@ -463,6 +476,15 @@ namespace hdi {
         scale._landmark_weight.resize(count);
         scale._transition_matrix.resize(count);
         selected_landmarks = 0;
+
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (int i = 0; i < count; ++i)
+            scale._transition_matrix[i].resize(count);
+
+          for (int i = 0; i < previous_scale_dp; ++i)
+            scale._area_of_influence[i].resize(count);
+        }
 
         for (int i = 0; i < previous_scale_dp; ++i) {
           if (importance_sampling[i] > thresh) {
