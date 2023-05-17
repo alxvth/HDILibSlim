@@ -91,8 +91,8 @@ namespace hdi{
 	//! Alternatively it can be used to offer a look-up table to translate the currently set KNN distance metric index back to human readable text.
     std::map<std::string, int> supported_knn_library_distance_metrics(int knn_lib);
 
-    template <typename scalar, typename integer, typename stats>
-    void computeHighDimensionalDistances(const float& high_dimensional_data, size_t num_dim, size_t num_dps, knn_params params, std::vector<scalar>& distances_squared, std::vector<int>& neighborhood_indices, stats* statistics = nullptr, utils::AbstractLog* logger = nullptr);
+    template <typename scalar_type, typename integer_type, typename stats_type>
+    void computeHighDimensionalDistances(const scalar_type* high_dimensional_data, size_t num_dim, size_t num_dps, knn_params params, std::vector<scalar_type>& distances_squared, std::vector<integer_type>& neighborhood_indices, stats_type* statistics = nullptr, utils::AbstractLog* logger = nullptr);
 
   }
 }

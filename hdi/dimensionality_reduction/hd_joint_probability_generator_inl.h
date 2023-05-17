@@ -77,7 +77,8 @@ namespace hdi {
     HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::Statistics::Statistics() :
       _total_time(0),
       _trees_construction_time(0),
-      _aknn_time(0),
+      _init_knn_time(0),
+      _comp_knn_time(0),
       _distribution_time(0)
     {}
 
@@ -85,7 +86,8 @@ namespace hdi {
     void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::Statistics::reset() {
       _total_time = 0;
       _trees_construction_time = 0;
-      _aknn_time = 0;
+      _init_knn_time = 0;
+      _comp_knn_time = 0;
       _distribution_time = 0;
     }
 
@@ -94,7 +96,8 @@ namespace hdi {
       utils::secureLog(logger, "\n-------- HD Joint Probability Generator Statistics -----------");
       utils::secureLogValue(logger, "Total time", _total_time);
       utils::secureLogValue(logger, "\tTrees construction time", _trees_construction_time, true, 1);
-      utils::secureLogValue(logger, "\tAKNN time", _aknn_time, true, 3);
+      utils::secureLogValue(logger, "\tAKNN initialization time", _init_knn_time, true, 3);
+      utils::secureLogValue(logger, "\tAKNN computation time", _comp_knn_time, true, 3);
       utils::secureLogValue(logger, "\tDistributions time", _distribution_time, true, 2);
       utils::secureLog(logger, "--------------------------------------------------------------\n");
     }
@@ -121,7 +124,7 @@ namespace hdi {
 
       size_t nn = params._perplexity * params._perplexity_multiplier + 1;
       knn_params ann_params{ params._aknn_algorithm, params._aknn_metric, nn, params._aknn_algorithmP1, params._aknn_algorithmP2, static_cast<size_t>(params._num_trees) };
-      computeHighDimensionalDistances<scalar_type, int, HDJointProbabilityGenerator<scalar_type, sparse_scalar_matrix>::Statistics>(*high_dimensional_data, num_dim, num_dps, ann_params, distances_squared, indices, &_statistics, _logger);
+      computeHighDimensionalDistances<scalar_type, int, HDJointProbabilityGenerator<scalar_type, sparse_scalar_matrix>::Statistics>(high_dimensional_data, num_dim, num_dps, ann_params, distances_squared, indices, &_statistics, _logger);
       computeGaussianDistributions(distances_squared, indices, distribution, params);
       symmetrize(distribution);
     }
@@ -138,7 +141,7 @@ namespace hdi {
 
       size_t nn = params._perplexity * params._perplexity_multiplier + 1;
       knn_params ann_params{ params._aknn_algorithm, params._aknn_metric, nn, params._aknn_algorithmP1, params._aknn_algorithmP2, static_cast<size_t>(params._num_trees) };
-      computeHighDimensionalDistances<scalar_type, int, HDJointProbabilityGenerator<scalar_type, sparse_scalar_matrix>::Statistics>(*high_dimensional_data, num_dim, num_dps, ann_params, distances_squared, indices, &_statistics, _logger);
+      computeHighDimensionalDistances<scalar_type, int, HDJointProbabilityGenerator<scalar_type, sparse_scalar_matrix>::Statistics>(high_dimensional_data, num_dim, num_dps, ann_params, distances_squared, indices, &_statistics, _logger);
       computeGaussianDistributions(distances_squared, indices, distribution, params);
     }
 
@@ -152,7 +155,7 @@ namespace hdi {
 
       size_t nn = params._perplexity * params._perplexity_multiplier + 1;
       knn_params ann_params{ params._aknn_algorithm, params._aknn_metric, nn, params._aknn_algorithmP1, params._aknn_algorithmP2, static_cast<size_t>(params._num_trees) };
-      computeHighDimensionalDistances<scalar_type, int, HDJointProbabilityGenerator<scalar_type, sparse_scalar_matrix>::Statistics>(*high_dimensional_data, num_dim, num_dps, ann_params, distances_squared, indices, &_statistics, _logger);
+      computeHighDimensionalDistances<scalar_type, int, HDJointProbabilityGenerator<scalar_type, sparse_scalar_matrix>::Statistics>(high_dimensional_data, num_dim, num_dps, ann_params, distances_squared, indices, &_statistics, _logger);
       computeGaussianDistributions(distances_squared, indices, probabilities, params);
     }
 

@@ -31,8 +31,14 @@
  */
 
 #include "knn_utils.h"
+#include "hierarchical_sne.h"
+#include "hd_joint_probability_generator.h"
+
 #include "hdi/utils/log_helper_functions.h"
 #include "hdi/utils/scoped_timers.h"
+
+#include "hdi/data/map_mem_eff.h"
+#include "hdi/data/sparse_mat.h"
 
 #include "hnswlib/hnswlib.h"
 #pragma warning( push )
@@ -48,8 +54,8 @@ namespace hdi{
   namespace dr {
 
 
-    template <typename scalar, typename integer, typename stats>
-    void computeHighDimensionalDistances(const scalar& high_dimensional_data, size_t num_dim, size_t num_dps, knn_params params, std::vector<scalar>& distances_squared, std::vector<integer>& neighborhood_indices, stats* statistics, utils::AbstractLog* logger) {
+    template <typename scalar_type, typename integer_type, typename stats_type>
+    void computeHighDimensionalDistances(const scalar_type* high_dimensional_data, size_t num_dim, size_t num_dps, knn_params params, std::vector<scalar_type>& distances_squared, std::vector<integer_type>& neighborhood_indices, stats_type* statistics, utils::AbstractLog* logger) {
       const auto nn = params.num_neigh;
       distances_squared.resize(num_dps * nn);
       neighborhood_indices.resize(num_dps * nn);
@@ -75,23 +81,23 @@ namespace hdi{
         }
 
         if (logger) utils::secureLog(logger, "\tBuilding the trees...");
-        hnswlib::HierarchicalNSW<scalar> appr_alg(space, num_dps, params.hnsw_M, params.ef_construction, 0);
+        hnswlib::HierarchicalNSW<scalar_type> appr_alg(space, num_dps, params.hnsw_M, params.ef_construction, 0);
         {
-          if (statistics) utils::ScopedTimer<scalar, utils::Seconds> timer(statistics->_init_knn_time);
-          appr_alg.addPoint((void*)&high_dimensional_data, (std::size_t)0);
+          if (statistics) utils::ScopedTimer<scalar_type, utils::Seconds> timer(statistics->_init_knn_time);
+          appr_alg.addPoint(static_cast<const void*>(high_dimensional_data), (std::size_t)0);
           unsigned num_threads = std::thread::hardware_concurrency();
           hnswlib::ParallelFor(1, num_dps, num_threads, [&](size_t i, size_t threadId) {
-            appr_alg.addPoint((void*)(&high_dimensional_data + (i * num_dim)), (hnswlib::labeltype)i);
+            appr_alg.addPoint(static_cast<const void*>(high_dimensional_data + (i * num_dim)), (hnswlib::labeltype)i);
             });
         }
 
         if (logger) utils::secureLog(logger, "\tAKNN queries...");
         {
-          if (statistics) utils::ScopedTimer<scalar, utils::Seconds> timer(statistics->_comp_knn_time);
+          if (statistics) utils::ScopedTimer<scalar_type, utils::Seconds> timer(statistics->_comp_knn_time);
 #pragma omp parallel for
           for (int i = 0; i < num_dps; ++i)
           {
-            auto top_candidates = appr_alg.searchKnn(&high_dimensional_data + (i * num_dim), (hnswlib::labeltype)nn);
+            auto top_candidates = appr_alg.searchKnn(high_dimensional_data + (i * num_dim), (hnswlib::labeltype)nn);
 
             while (top_candidates.size() > nn) {
               if (logger) utils::secureLog(logger, "\tI SHOULD NEVER BE HERE - DELETE THIS LOOP...");
@@ -99,7 +105,7 @@ namespace hdi{
               top_candidates.pop();
             }
 
-            scalar* distances = distances_squared.data() + (i * nn);
+            scalar_type* distances = distances_squared.data() + (i * nn);
             int* indices = neighborhood_indices.data() + (i * nn);
             int j = 0;
             assert(top_candidates.size() == nn);
@@ -150,7 +156,7 @@ namespace hdi{
 
         if (logger) utils::secureLog(logger, "\tBuilding the trees...");
         {
-          if (statistics) utils::ScopedTimer<scalar, utils::Seconds> timer(statistics->_init_knn_time);
+          if (statistics) utils::ScopedTimer<scalar_type, utils::Seconds> timer(statistics->_init_knn_time);
 
           for (int i = 0; i < num_dps; ++i) {
             double* vec = new double[num_dim];
@@ -176,7 +182,7 @@ namespace hdi{
 
         if (logger) utils::secureLog(logger, "\tAKNN queries...");
         {
-          if (statistics) utils::ScopedTimer<scalar, utils::Seconds> timer(statistics->_comp_knn_time);
+          if (statistics) utils::ScopedTimer<scalar_type, utils::Seconds> timer(statistics->_comp_knn_time);
 
 #pragma omp parallel for
           for (int n = 0; n < num_dps; n++)
@@ -197,8 +203,15 @@ namespace hdi{
       }
 
     }
-
-  }
+    template void computeHighDimensionalDistances<float, int, HierarchicalSNE<float, std::vector<std::map<unsigned int, float>>>::Statistics>(const float*, size_t, size_t, knn_params, std::vector<float>&, std::vector<int>&, HierarchicalSNE<float, std::vector<std::map<unsigned int, float>>>::Statistics*, utils::AbstractLog*);
+    template void computeHighDimensionalDistances<float, int, HierarchicalSNE<float, std::vector<std::unordered_map<unsigned int, float>>>::Statistics>(const float*, size_t, size_t, knn_params, std::vector<float>&, std::vector<int>&, HierarchicalSNE<float, std::vector<std::unordered_map<unsigned int, float>>>::Statistics*, utils::AbstractLog*);
+    template void computeHighDimensionalDistances<float, int, HierarchicalSNE<float, std::vector<hdi::data::MapMemEff<unsigned int, float>>>::Statistics>(const float*, size_t, size_t, knn_params, std::vector<float>&, std::vector<int>&, HierarchicalSNE<float, std::vector<hdi::data::MapMemEff<unsigned int, float>>>::Statistics*, utils::AbstractLog*);
+    template void computeHighDimensionalDistances<float, int, HierarchicalSNE<float, std::vector<hdi::data::SparseVec<unsigned int, float>>>::Statistics>(const float*, size_t, size_t, knn_params, std::vector<float>&, std::vector<int>&, HierarchicalSNE<float, std::vector<hdi::data::SparseVec<unsigned int, float>>>::Statistics*, utils::AbstractLog*);
+    template void computeHighDimensionalDistances<float, int, HDJointProbabilityGenerator<float, std::vector<std::map<unsigned int, float>>>::Statistics>(const float*, size_t, size_t, knn_params, std::vector<float>&, std::vector<int>&, class HDJointProbabilityGenerator<float, std::vector<std::map<unsigned int, float>>>::Statistics*, utils::AbstractLog*);
+    template void computeHighDimensionalDistances<float, int, HDJointProbabilityGenerator<float, std::vector<std::unordered_map<unsigned int, float>>>::Statistics>(const float*, size_t, size_t, knn_params, std::vector<float>&, std::vector<int>&, class HDJointProbabilityGenerator<float, std::vector<std::unordered_map<unsigned int, float>>>::Statistics*, utils::AbstractLog*);
+    template void computeHighDimensionalDistances<float, int, HDJointProbabilityGenerator<float, std::vector<hdi::data::MapMemEff<unsigned int, float>>>::Statistics>(const float*, size_t, size_t, knn_params, std::vector<float>&, std::vector<int>&, class HDJointProbabilityGenerator<float, std::vector<hdi::data::MapMemEff<unsigned int, float>>>::Statistics*, utils::AbstractLog*);
+    template void computeHighDimensionalDistances<float, int, HDJointProbabilityGenerator<float, std::vector<hdi::data::SparseVec<unsigned int, float>>>::Statistics>(const float*, size_t, size_t, knn_params, std::vector<float>&, std::vector<int>&, class HDJointProbabilityGenerator<float, std::vector<hdi::data::SparseVec<unsigned int, float>>>::Statistics*, utils::AbstractLog*);
+}
 }
 
 #endif // KNN_H

@@ -95,7 +95,8 @@ namespace hdi{
       public:
         scalar_type _total_time;
         scalar_type _trees_construction_time;
-        scalar_type _aknn_time;
+        scalar_type _init_knn_time;
+        scalar_type _comp_knn_time;
         scalar_type _distribution_time;
       };
 

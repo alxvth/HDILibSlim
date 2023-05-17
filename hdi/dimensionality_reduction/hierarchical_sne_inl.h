@@ -293,7 +293,7 @@ namespace hdi {
       std::vector<int> neighborhood_graph;
 
       knn_params ann_params{ _params._aknn_algorithm, _params._aknn_metric, _params._num_neighbors, _params._aknn_algorithmP1, _params._aknn_algorithmP2, _params._aknn_num_trees };
-      computeHighDimensionalDistances<scalar_type, int, HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::Statistics>(*_high_dimensional_data, _dimensionality, _num_dps, ann_params, distance_based_probabilities, neighborhood_graph, &_statistics, _logger);
+      computeHighDimensionalDistances<scalar_type, int, HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::Statistics>(_high_dimensional_data, _dimensionality, _num_dps, ann_params, distance_based_probabilities, neighborhood_graph, &_statistics, _logger);
       computeFMC(distance_based_probabilities, neighborhood_graph);
       
       unsigned_int_type nn = _params._num_neighbors + 1;
