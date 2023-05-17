@@ -137,7 +137,7 @@ namespace hdi{
 
       bool found(false);
       while(l<=r){
-        m = (l+r)*0.5;
+        m = static_cast<int>((l+r)*0.5f);
         if(_memory[m].first == k){
           found = true;
           break;

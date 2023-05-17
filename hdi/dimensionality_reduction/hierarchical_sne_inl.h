@@ -361,7 +361,7 @@ namespace hdi {
       utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._landmarks_selection_time);
       utils::secureLog(_logger, "Landmark selection with fixed reduction...");
       const unsigned_int_type previous_scale_dp = previous_scale._transition_matrix.size();
-      const unsigned_int_type num_landmarks = previous_scale_dp * _params._rs_reduction_factor_per_layer;
+      const unsigned_int_type num_landmarks = static_cast<unsigned_int_type>(previous_scale_dp * _params._rs_reduction_factor_per_layer);
 
       std::default_random_engine generator(seed());
       std::uniform_int_distribution<> distribution_int(0, previous_scale_dp - 1);
@@ -584,8 +584,8 @@ namespace hdi {
           //#ifdef __USE_GCD__
           //          );
           //#endif
-          _statistics._aoi_num_walks = previous_scale_dp * walks_per_dp;
-          _statistics._aoi_sparsity = 1 - scalar_type(num_elem_in_Is) / (previous_scale_dp*selected_landmarks);
+          _statistics._aoi_num_walks = static_cast<scalar_type>(previous_scale_dp * walks_per_dp);
+          _statistics._aoi_sparsity = static_cast<scalar_type>(1) - static_cast<scalar_type>(num_elem_in_Is) / (previous_scale_dp*selected_landmarks);
         }
 
         {
@@ -800,7 +800,7 @@ namespace hdi {
             //  #endif
             progress.finish();
           }
-          _statistics._aoi_num_walks = previous_scale_dp * walks_per_dp;
+          _statistics._aoi_num_walks = static_cast<scalar_type>(previous_scale_dp * walks_per_dp);
           _statistics._aoi_sparsity = 1 - scalar_type(num_elem_in_Is) / (previous_scale_dp*selected_landmarks);
         }
 

@@ -323,9 +323,9 @@ namespace hdi {
       // Compute gradient of the KL function using a compute shader approach
 #ifndef __APPLE__
       if (_gpgpu_type == COMPUTE_SHADER)
-        _gpgpu_compute_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
+        _gpgpu_compute_tsne.compute(_embedding, exaggerationFactor(), static_cast<float>(_iteration), mult);
       else
-        _gpgpu_raster_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
+        _gpgpu_raster_tsne.compute(_embedding, exaggerationFactor(), static_cast<float>(_iteration), mult);
 #else
       _gpgpu_raster_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
 #endif

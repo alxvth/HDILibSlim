@@ -218,7 +218,7 @@ namespace hdi {
     void GpgpuSneRaster<sparse_scalar_matrix_type>::interpolateFields(unsigned int num_points, unsigned int width, unsigned int height)
     {
       // Bind dummy fbo with empty texture to store interpolated field values
-      int fbo_size = ceil(sqrt(num_points));
+      int fbo_size = static_cast<int>(std::ceil(std::sqrt(num_points)));
 
       glBindTexture(GL_TEXTURE_2D, _dummy_tex);
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, fbo_size, fbo_size, 0, GL_RGBA, GL_FLOAT, 0);
