@@ -174,7 +174,7 @@ namespace hdi{
             tree->get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
             unsigned int neighbors_count = closest.size();
             if (neighbors_count < nn) {
-              printf("Requesting %d neighbors, but ANNOY returned only %u. Please increase search_k\n", nn, neighbors_count);
+              printf("Requesting %zd neighbors, but ANNOY returned only %u. Please increase search_k\n", nn, neighbors_count);
               return;
             }
           }
