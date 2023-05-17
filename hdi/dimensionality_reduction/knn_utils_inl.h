@@ -139,7 +139,7 @@ namespace hdi{
         //  tree = new Annoy::AnnoyIndex<int32_t, double, Annoy::Hamming, Annoy::Kiss64Random, Annoy::AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
         //  break;
         case hdi::dr::KNN_METRIC_INNER_PRODUCT:
-          if (logger) utils::secureLog(logger, "Computing approximated knn with Annoy using Dot (inner product) product distances ...");
+          if (logger) utils::secureLog(logger, "Computing approximated knn with Annoy using Inner Product (Dot) distances ...");
           tree = new Annoy::AnnoyIndex<int32_t, double, Annoy::DotProduct, Annoy::Kiss64Random, Annoy::AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
           break;
         default:

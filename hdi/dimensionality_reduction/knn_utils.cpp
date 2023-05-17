@@ -47,7 +47,7 @@ namespace hdi {
       case hdi::dr::KNN_ANNOY: {
         result["Cosine"] = hdi::dr::KNN_METRIC_COSINE;
         result["Manhattan"] = hdi::dr::KNN_METRIC_MANHATTAN;
-        result["Dot (Inner Product)"] = hdi::dr::KNN_METRIC_INNER_PRODUCT;
+        result["Inner Product (Dot)"] = hdi::dr::KNN_METRIC_INNER_PRODUCT;
         return result;
       }
 
