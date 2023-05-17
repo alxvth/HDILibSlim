@@ -1673,12 +1673,12 @@ namespace hdi {
       std::vector<std::unordered_map<unsigned_int_type, scalar_type>> influence;
       hsne.getInfluenceOnDataPoint(pnt_id, influence);
 
-      res = std::tuple<unsigned_int_type, int_type, scalar_type>(_cluster_tree.size() - 1, -1, 1);
+      res = std::make_tuple(static_cast<unsigned_int_type>(_cluster_tree.size() - 1), static_cast<int_type>(-1), static_cast<scalar_type>(1));
       std::vector<unsigned_int_type> clusters_to_analyze(_cluster_tree[_cluster_tree.size() - 1].size());
       std::iota(clusters_to_analyze.begin(), clusters_to_analyze.end(), 0);
 
       //just for test
-      for (int s = _cluster_tree.size() - 1; s >= 0 && clusters_to_analyze.size(); --s) {
+      for (unsigned_int_type s = _cluster_tree.size() - 1; s >= 0 && clusters_to_analyze.size(); --s) {
         unsigned_int_type scale_id = s;
         std::vector<scalar_type> cluster_influence(clusters_to_analyze.size(), 0);
         scalar_type unclustered_influence(0);
@@ -1699,7 +1699,7 @@ namespace hdi {
 
         scalar_type max(unclustered_influence);
         int_type cluster_id(-1);
-        for (int i = 0; i < clusters_to_analyze.size(); ++i) {
+        for (size_t i = 0; i < clusters_to_analyze.size(); ++i) {
           if (cluster_influence[i] > max) {
             max = cluster_influence[i];
             cluster_id = _cluster_tree[scale_id][clusters_to_analyze[i]].id();
@@ -1714,7 +1714,7 @@ namespace hdi {
         //compute children nodes
         clusters_to_analyze.clear();
         if (s != 0) {
-          for (int i = 0; i < _cluster_tree[s - 1].size(); ++i) {
+          for (size_t i = 0; i < _cluster_tree[s - 1].size(); ++i) {
             if (_cluster_tree[s - 1][i].parent_id() == cluster_id) {
               clusters_to_analyze.push_back(i);
             }
