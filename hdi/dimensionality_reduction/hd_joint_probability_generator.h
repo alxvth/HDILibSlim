@@ -119,8 +119,6 @@ namespace hdi{
       const Statistics& statistics(){ return _statistics; }
 
     private:
-      //! Compute the euclidean distances between points
-      void computeHighDimensionalDistances(/*const*/ scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, std::vector<scalar_type>& distances_squared, std::vector<int>& indices, Parameters& params);
       //! Compute a gaussian distribution for each data-point
       void computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<int>& indices, sparse_scalar_matrix& matrix, Parameters& params);
       //! Compute a gaussian distribution for each data-point

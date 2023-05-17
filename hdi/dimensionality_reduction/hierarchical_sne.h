@@ -136,6 +136,7 @@ namespace hdi {
       public:
         scalar_type _total_time;
         scalar_type _init_knn_time; //! Time requested for the initialization of the KNN graph at the first scale
+        scalar_type _comp_knn_time; //! Time requested for the computation of the KNN graph at the first scale
         scalar_type _init_probabilities_time; //! Time requested for the computation of transision probabilities
         scalar_type _init_fmc_time; //! Time requested for the computation of the FMC from the KNN graph
 
@@ -304,8 +305,8 @@ namespace hdi {
       static void computeAoI(const HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>& hsne, unsigned_int_type scale, const std::vector<unsigned_int_type>& idxes, Functor& functor);
 
     private:
-      //! Compute the neighborhood graph
-      void computeNeighborhoodGraph(scalar_vector_type& distance_based_probabilities, std::vector<int>& neighborhood_graph);
+      //! Compute FMC
+      void computeFMC(scalar_vector_type& distance_based_probabilities, std::vector<int>& neighborhood_graph);
       //! Initialize the first scale
       void initializeFirstScale();
       //! Initialize the first scale

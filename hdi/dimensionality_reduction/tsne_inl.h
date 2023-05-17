@@ -140,8 +140,8 @@ namespace hdi{
         _init_params = params;
       }
 
-      //compute distances between data-points
-      computeHighDimensionalDistances();
+      //compute exact distances between data-points
+      computeExactHighDimensionalDistances();
       //Compute gaussian distributions
       computeGaussianDistributions(params._perplexity);
       //Compute High-dimensional distribution
@@ -158,8 +158,8 @@ namespace hdi{
     }
 
     template <typename scalar_type>
-    void TSNE<scalar_type>::computeHighDimensionalDistances(){
-      utils::secureLog(_logger,"Computing High-dimensional distances...");
+    void TSNE<scalar_type>::computeExactHighDimensionalDistances(){
+      utils::secureLog(_logger,"Computing Exact High-dimensional distances...");
       const int n = size();
 #ifdef __USE_GCD__
       std::cout << "GCD dispatch, tsne_inl 165.\n";

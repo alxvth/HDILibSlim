@@ -1,20 +1,12 @@
-#include "knn_utils.h"
+#include "knn_utils_inl.h"
 #include <stdexcept>
 
-#ifdef HNSWLIB_FOUND
-#ifdef _MSC_VER
-#if(_MSC_VER >= 1900)
-#define HNSWLIB_SUPPORTED
-#endif //(_MSC_VER >= 1900)
-#else // _MSC_VER
-#if (__cplusplus >=201103)
-#define HNSWLIB_SUPPORTED
-#endif //(__cplusplus >=201103)
-#endif // _MSC_VER
-#endif //HNSWLIB_FOUND
+#include "hierarchical_sne.h"
 
 namespace hdi {
   namespace dr {
+    HierarchicalSNE testl;
+
     int HierarchicalSNE_NrOfKnnAlgorithms()
     {
       int numSupported = 1;
@@ -49,13 +41,13 @@ namespace hdi {
       switch (knn_lib)
       {
       case hdi::dr::KNN_HNSW: {
-        result["Inner Product"] = hdi::dr::KNN_METRIC_INNER_PRODUCT;
+        result["Inner Product (Dot)"] = hdi::dr::KNN_METRIC_INNER_PRODUCT;
         return result;
       }
       case hdi::dr::KNN_ANNOY: {
         result["Cosine"] = hdi::dr::KNN_METRIC_COSINE;
         result["Manhattan"] = hdi::dr::KNN_METRIC_MANHATTAN;
-        result["Dot"] = hdi::dr::KNN_METRIC_DOT;
+        result["Dot (Inner Product)"] = hdi::dr::KNN_METRIC_INNER_PRODUCT;
         return result;
       }
 
@@ -64,6 +56,7 @@ namespace hdi {
       }
       }
     }
+
   }
 }
 

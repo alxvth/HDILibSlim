@@ -132,7 +132,7 @@ namespace hdi{
 
     private:
       //! Compute the euclidean distances between points
-      void computeHighDimensionalDistances();
+      void computeExactHighDimensionalDistances();
       //! Compute a gaussian distribution for each data-point
       void computeGaussianDistributions(double perplexity);
       //! Compute High-dimensional distribution
