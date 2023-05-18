@@ -405,15 +405,15 @@ namespace hdi {
 
         ++selected_landmarks;
       }
-      _statistics._landmarks_selection_num_walks = num_tries * _params._rs_outliers_removal_jumps;
+      _statistics._landmarks_selection_num_walks = static_cast<scalar_type>(num_tries * _params._rs_outliers_removal_jumps);
     }
 
     template <typename scalar_type, typename sparse_scalar_matrix_type>
     void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::selectLandmarksWithStationaryDistribution(const Scale& previous_scale, Scale& scale, unsigned_int_type& selected_landmarks) {
       utils::secureLog(_logger, "Landmark selection...");
       const unsigned_int_type previous_scale_dp = previous_scale._transition_matrix.size();
-      int count = 0;
-      int thresh = _params._mcmcs_num_walks * _params._mcmcs_landmark_thresh;
+      unsigned_int_type count = 0;
+      unsigned_int_type thresh = static_cast<unsigned_int_type>(_params._mcmcs_num_walks * _params._mcmcs_landmark_thresh);
       //__block std::vector<unsigned_int_type> importance_sampling(previous_scale_dp,0);
       std::vector<unsigned_int_type> importance_sampling(previous_scale_dp, 0);
 
@@ -453,11 +453,11 @@ namespace hdi {
         {
           std::vector<unsigned_int_type> importance_sampling_sort = importance_sampling;
           std::sort(importance_sampling_sort.begin(), importance_sampling_sort.end());
-          unsigned_int_type cutoff = importance_sampling_sort[(importance_sampling_sort.size() - 1) * (1.0f - _params._hard_cut_off_percentage)];
+          unsigned_int_type cutoff = importance_sampling_sort[static_cast<size_t>((importance_sampling_sort.size() - 1) * (1.0f - _params._hard_cut_off_percentage))];
           thresh = cutoff;
         }
 
-        _statistics._landmarks_selection_num_walks = previous_scale_dp * _params._mcmcs_num_walks;
+        _statistics._landmarks_selection_num_walks = static_cast<scalar_type>(previous_scale_dp * _params._mcmcs_num_walks);
 
         for (int i = 0; i < previous_scale_dp; ++i) {
           if (importance_sampling[i] > thresh)
@@ -1214,7 +1214,7 @@ namespace hdi {
 
 #pragma omp parallel for
       for (int dp = 0; dp < num_datapoints; dp++) {
-        float inf_thresh = 0.01;
+        float inf_thresh = 0.01f;
         std::vector<unsigned_int_type> top_landmark_per_scale;
         std::vector<bool> scale_has_landmark;
         getTopLandmarksInfluencingDataPoint(dp, top_landmark_per_scale, scale_has_landmark, inf_thresh, false);
@@ -1232,7 +1232,7 @@ namespace hdi {
           }
           if (redo > 0) {
             //if(thresh < 0.0005) std::cout << "Couldn't find landmark for point " << i << " at scale " << redo << " num possible landmarks " << influence[redo].size() << "\nSetting new threshold to " << thresh * 0.1 << std::endl;
-            inf_thresh *= 0.1;
+            inf_thresh *= 0.1f;
             getTopLandmarksInfluencingDataPoint(dp, top_landmark_per_scale, scale_has_landmark, inf_thresh, false);
           }
         }
@@ -1852,13 +1852,13 @@ namespace hdi {
           data::IO::loadSparseMatrix(scale._transition_matrix, stream, log);
 
           utils::secureLog(log, "\t... (init) landmarks to original data ...");
-          scale._landmark_to_original_data_idx.resize(n);
+          scale._landmark_to_original_data_idx.resize(static_cast<size_t>(n));
           std::iota(scale._landmark_to_original_data_idx.begin(), scale._landmark_to_original_data_idx.end(), 0);
           utils::secureLog(log, "\t... (init) landmarks to previous scale ...");
-          scale._landmark_to_previous_scale_idx.resize(n);
+          scale._landmark_to_previous_scale_idx.resize(static_cast<size_t>(n));
           std::iota(scale._landmark_to_previous_scale_idx.begin(), scale._landmark_to_previous_scale_idx.end(), 0);
           utils::secureLog(log, "\t... (init) landmark weights ...");
-          scale._landmark_weight.resize(n, 1);
+          scale._landmark_weight.resize(static_cast<size_t>(n), 1);
 
 
 

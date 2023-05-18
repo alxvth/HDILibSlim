@@ -101,8 +101,8 @@ namespace hdi {
 
         hdi::dr::knn_library _aknn_algorithm;   //! used to switch between knn algorithms
         hdi::dr::knn_distance_metric _aknn_metric; // knn distance metric
-        double            _aknn_algorithmP1; //! used for HNSW
-        double            _aknn_algorithmP2; //! used for HNSW
+        size_t            _aknn_algorithmP1; //! used for HNSW
+        size_t            _aknn_algorithmP2; //! used for HNSW
             /////////////////// Landmark Selection ////////////////////////
         bool _monte_carlo_sampling; //! Select landmarks with a Markov Chain Monte Carlo sampling (MCMCS)
         unsigned_int_type _mcmcs_num_walks; //! Num walks per landmark in the MCMCS (beta in the paper)

@@ -65,8 +65,8 @@ namespace hdi{
       knn_distance_metric metric = knn_distance_metric::KNN_METRIC_EUCLIDEAN;
       size_t num_neigh = 91;
 
-      double hnsw_M = 16;             // hnsw parameter
-      double ef_construction = 200;   // hnsw parameter
+      size_t hnsw_M = 16;             // hnsw parameter
+      size_t ef_construction = 200;   // hnsw parameter
 
       size_t num_trees = 4;           // annoy parameter
     };

@@ -76,8 +76,8 @@ namespace hdi{
         int         _num_checks;            //! Number of checks used int the AKNN
         hdi::dr::knn_library _aknn_algorithm;
         hdi::dr::knn_distance_metric _aknn_metric;
-        double      _aknn_algorithmP1;
-        double      _aknn_algorithmP2;
+        size_t      _aknn_algorithmP1;
+        size_t      _aknn_algorithmP2;
       };
 
       //!
