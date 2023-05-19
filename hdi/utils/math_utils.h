@@ -150,7 +150,7 @@ namespace hdi{
 
     template <typename sparse_matrix_type, typename vector_type>
     void computeStationaryDistribution(const sparse_matrix_type& fmc, vector_type* distribution, uint32_t iterations, typename vector_type::value_type eps){
-      const unsigned int n = fmc.size();
+      const auto n = fmc.size();
       assert(fmc.size() == distribution->size());
 
 

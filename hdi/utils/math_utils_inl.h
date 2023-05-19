@@ -158,11 +158,11 @@ namespace hdi{
       double mult(-1. / (2 * sigma * sigma));
       double sum(0);
       for(int idx = 0; distance_iter != distances_end; ++distance_iter, ++distribution_iter, ++idx){
-        *distribution_iter = std::exp((*distance_iter) * (*distance_iter) * mult);
+        *distribution_iter = static_cast<Vector::value_type>(std::exp((*distance_iter) * (*distance_iter) * mult));
         sum += *distribution_iter;
       }
       for(auto distribution_iter = distribution_begin; distribution_iter != distribution_end; ++distribution_iter){
-        (*distribution_iter) /= sum;
+        (*distribution_iter) /= static_cast<Vector::value_type>(sum);
       }
       return sum;
 
@@ -197,10 +197,10 @@ namespace hdi{
               (*distribution_iter) = 0;
               continue;
             }
-            double v = exp(-beta * (*distance_iter));
+            double v = std::exp(-beta * (*distance_iter));
             sigma = std::sqrt(1/(2*beta));
             //double v = exp(- (*distance_iter) / (2*sigma*sigma));
-            (*distribution_iter) = static_cast<typename Vector::value_type>(v);
+            (*distribution_iter) = static_cast<Vector::value_type>(v);
             sum_distribution += v;
           }
 
@@ -244,14 +244,14 @@ namespace hdi{
       
       }
       if(!found){
-        double v = 1./(size+((ignore<0||ignore>=size)?0:-1));
+        auto v = static_cast<Vector::value_type>(1./(size+((ignore<0||ignore>=size)?0:-1)));
         for(auto distribution_iter = distribution_begin; distribution_iter != distribution_end; ++distribution_iter){
           (*distribution_iter) = v;
         }
         return 0;
       }
       for(auto distribution_iter = distribution_begin; distribution_iter != distribution_end; ++distribution_iter){
-        (*distribution_iter) /= sum_distribution;
+        (*distribution_iter) = static_cast<Vector::value_type>(*distribution_iter / sum_distribution);
       }
       return sigma;
     }
@@ -284,7 +284,7 @@ namespace hdi{
               continue;
             //double v = exp(-beta * (*distance_iter));
             double sigma =std::sqrt(1/(2*beta));
-            double v = exp(- (*distance_iter) / (2*sigma*sigma));
+            double v = std::exp(- (*distance_iter) / (2*sigma*sigma));
             (*distribution_iter) = static_cast<typename Vector::value_type>(v);
             sum_distribution += v;
           }
@@ -314,14 +314,14 @@ namespace hdi{
       
       }
       if(!found){
-        double v = 1./(size+((ignore<0||ignore>=size)?0:-1));
+        auto v = static_cast<Vector::value_type>(1./(size+((ignore<0||ignore>=size)?0:-1)));
         for(auto distribution_iter = distribution_begin; distribution_iter != distribution_end; ++distribution_iter){
           (*distribution_iter) = v;
         }
         return 1;
       }
       for(auto distribution_iter = distribution_begin; distribution_iter != distribution_end; ++distribution_iter){
-        (*distribution_iter) /= sum_distribution;
+        (*distribution_iter) = static_cast<Vector::value_type>(*distribution_iter / sum_distribution);
       }
       return sum_distribution;
     }
@@ -341,7 +341,7 @@ namespace hdi{
       double beta(-1. / (2 * sigma * sigma));
       double sum(0);
       for(int idx = 0; distance_iter != distances_end; ++distance_iter, ++distribution_iter, ++idx){
-        *distribution_iter = alpha*std::exp((*distance_iter) * (*distance_iter) * beta);
+        *distribution_iter = static_cast<Vector::value_type>(alpha * std::exp((*distance_iter) * (*distance_iter) * beta));
         sum += *distribution_iter;
       }
       return sum;

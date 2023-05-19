@@ -50,10 +50,10 @@ namespace hdi{
       //! display some text on the logger
       virtual void display(const std::string& d, bool time_stamp = false);
       //! return the number of written character
-      unsigned int num_written_chars()const;
+      size_t num_written_chars()const;
 
     private:
-      unsigned int num_written_chars_;
+      size_t num_written_chars_;
     };
   }
 }

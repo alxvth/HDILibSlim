@@ -54,7 +54,7 @@ namespace hdi{
       num_written_chars_ += d.size() + 1;
     }
 
-    unsigned int CoutLog::num_written_chars()const{
+    size_t CoutLog::num_written_chars()const{
       return num_written_chars_;
     }
 
