@@ -53,7 +53,9 @@ When cloning the repo be aware that it includes submodules. With the latest git 
 git clone --recurse-submodules https://github.com/alxvth/HDILibSlim.git
 ```
 
-### Requirements
+### Dependencies
+
+- [Eigen 3.4](https://gitlab.com/libeigen/eigen/)
 
 ### Ubuntu
 
@@ -73,7 +75,7 @@ sudo make install
 On **Windows** use CMake and set a `custom_install_path`
 
 ```
-cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="custom_install_path"
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="custom_install_path"
 ```
 
 
