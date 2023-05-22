@@ -72,12 +72,11 @@ namespace hdi{
       public:
         scalar_type _perplexity;            //! Perplexity value in evert distribution.
         int         _perplexity_multiplier; //! Multiplied by the perplexity gives the number of nearest neighbors used
-        int         _num_trees;             //! Number of trees used int the AKNN
-        int         _num_checks;            //! Number of checks used int the AKNN
         hdi::dr::knn_library _aknn_algorithm;
         hdi::dr::knn_distance_metric _aknn_metric;
-        size_t      _aknn_algorithmP1;
-        size_t      _aknn_algorithmP2;
+        size_t      _aknn_hnsw_M;
+        size_t      _aknn_hnsw_eff;
+        int         _aknn_annoy_num_trees;
       };
 
       //!

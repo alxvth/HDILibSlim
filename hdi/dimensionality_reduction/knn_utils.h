@@ -68,7 +68,7 @@ namespace hdi{
       size_t hnsw_M = 16;             // hnsw parameter
       size_t ef_construction = 200;   // hnsw parameter
 
-      size_t num_trees = 4;           // annoy parameter
+      int num_trees = 4;           // annoy parameter
     };
 
     struct knn_stats

@@ -63,11 +63,11 @@ namespace hdi {
     HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::Parameters::Parameters() :
       _seed(-1),
       _num_neighbors(30),
-      _aknn_num_trees(4),
       _aknn_algorithm(hdi::dr::KNN_ANNOY),
       _aknn_metric(hdi::dr::KNN_METRIC_EUCLIDEAN),
-      _aknn_algorithmP1(16), // default parameter for HNSW
-      _aknn_algorithmP2(200), // default parameter for HNSW
+      _aknn_hnsw_M(16), // default parameter for HNSW
+      _aknn_hnsw_eff(200), // default parameter for HNSW
+      _aknn_annoy_num_trees(4),
       _monte_carlo_sampling(true),
       _mcmcs_num_walks(10),
       _mcmcs_landmark_thresh(1.5),
@@ -294,7 +294,7 @@ namespace hdi {
 
       unsigned_int_type nn = _params._num_neighbors + 1;
 
-      knn_params ann_params{ _params._aknn_algorithm, _params._aknn_metric, nn, _params._aknn_algorithmP1, _params._aknn_algorithmP2, _params._aknn_num_trees };
+      knn_params ann_params{ _params._aknn_algorithm, _params._aknn_metric, nn, _params._aknn_hnsw_M, _params._aknn_hnsw_eff, _params._aknn_annoy_num_trees };
       computeHighDimensionalDistances<scalar_type, int, HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::Statistics>(_high_dimensional_data, _dimensionality, _num_dps, ann_params, distance_based_probabilities, neighborhood_graph, &_statistics, _logger);
       computeFMC(distance_based_probabilities, neighborhood_graph);
       

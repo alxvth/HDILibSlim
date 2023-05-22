@@ -96,13 +96,15 @@ namespace hdi {
         Parameters();
         int _seed; //! Seed for random algorithms. If a negative value is provided, a time-based seed is used.
         unsigned_int_type _num_neighbors; //! Number of neighbors used in the KNN graph
-        unsigned_int_type _aknn_num_trees; //! Number of trees in the Approximated KNN algorithm (See Approximated and User Steerable tSNE paper)
-        unsigned_int_type _aknn_num_checks; //! Number of checks in the Approximated KNN algorithm (See Approximated and User Steerable tSNE paper)
 
         hdi::dr::knn_library _aknn_algorithm;   //! used to switch between knn algorithms
         hdi::dr::knn_distance_metric _aknn_metric; // knn distance metric
-        size_t            _aknn_algorithmP1; //! used for HNSW
-        size_t            _aknn_algorithmP2; //! used for HNSW
+
+        int _aknn_annoy_num_trees; //! Number of checks in the Approximated KNN algorithm (used for Annoy)
+
+        size_t _aknn_hnsw_M; //! used for HNSW
+        size_t _aknn_hnsw_eff; //! used for HNSW
+
             /////////////////// Landmark Selection ////////////////////////
         bool _monte_carlo_sampling; //! Select landmarks with a Markov Chain Monte Carlo sampling (MCMCS)
         unsigned_int_type _mcmcs_num_walks; //! Num walks per landmark in the MCMCS (beta in the paper)
