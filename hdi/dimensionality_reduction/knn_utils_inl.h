@@ -91,6 +91,8 @@ namespace hdi{
             });
         }
 
+        appr_alg.setEf(params.ef_construction); // set search ef parameter
+
         if (logger) utils::secureLog(logger, "\tAKNN queries...");
         {
           if (statistics) utils::ScopedTimer<scalar_type, utils::Seconds> timer(statistics->_comp_knn_time);
