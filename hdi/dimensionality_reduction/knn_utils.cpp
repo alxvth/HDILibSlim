@@ -5,28 +5,12 @@
 
 namespace hdi {
   namespace dr {
-    int HierarchicalSNE_NrOfKnnAlgorithms()
-    {
-      int numSupported = 1;
-#ifdef HNSWLIB_SUPPORTED
-      numSupported++;
-#endif
-
-#ifdef __USE_ANNOY__
-      numSupported++;
-#endif
-      return numSupported;
-    }
 
     std::map<std::string, int> supported_knn_libraries()
     {
       std::map<std::string, int> result;
-#ifdef HNSWLIB_SUPPORTED
       result["HNSW"] = hdi::dr::KNN_HNSW;
-#endif
-#ifdef __USE_ANNOY__
       result["ANNOY"] = hdi::dr::KNN_ANNOY;
-#endif
 
       return result;
     }

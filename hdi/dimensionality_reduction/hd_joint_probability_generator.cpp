@@ -34,18 +34,16 @@
 
 namespace hdi{
   namespace dr{
-	  int HDJointProbabilityGenerator_NrOfKnnAlgorithms()
-	  {
-          int numSupported = 1;
-#ifdef HNSWLIB_SUPPORTED
-          numSupported++;
-#endif
-        
-#ifdef __USE_ANNOY__
-          numSupported++;
-#endif
-          return numSupported;
-	  }
-    template class HDJointProbabilityGenerator<float>;
+    template class HDJointProbabilityGenerator<float, std::vector<std::map<uint32_t, float>>>;
+    // template class HDJointProbabilityGenerator<double,std::vector<std::map<uint32_t,double>>>;
+
+    template class HDJointProbabilityGenerator<float, std::vector<std::unordered_map<uint32_t, float>>>;
+    // template class HDJointProbabilityGenerator<double,std::vector<std::unordered_map<uint32_t,double>>>;
+
+    template class HDJointProbabilityGenerator<float, std::vector<hdi::data::MapMemEff<uint32_t, float>>>;
+    // template class HDJointProbabilityGenerator<double,std::vector<hdi::data::MapMemEff<uint32_t,double>>>;
+
+    template class HDJointProbabilityGenerator<float, std::vector<hdi::data::SparseVec<uint32_t, float>>>;
+    // template class HDJointProbabilityGenerator<double,std::vector<hdi::data::SparseVec<uint32_t,double>>>;
   }
 }
