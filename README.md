@@ -47,7 +47,7 @@ Reference to cite when you use HDI in a research paper:
 ## Building
 
 ### GIT Cloning 
-When cloning the repo be aware that it includes submodules. With the latest git versions you shoule use the following command:
+When cloning the repo be aware that it includes submodules. With the latest git versions you should use the following command:
 
 ```
 git clone --recurse-submodules https://github.com/alxvth/HDILibSlim.git
