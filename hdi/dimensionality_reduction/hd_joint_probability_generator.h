@@ -48,8 +48,6 @@
 namespace hdi{
   namespace dr{
 
-    int HDJointProbabilityGenerator_NrOfKnnAlgorithms();
-
     //! Generator for a joint probability distribution that describes similarities in the high dimensional data
     /*!
       Generator for a joint probability distribution that describes similarities in the high dimensional data.
