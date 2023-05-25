@@ -37,7 +37,13 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 # cmake utils
 include(CMakeCommon)
 
+if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W2 /permissive- /Zc:__cplusplus")
+endif()
+
+# Dependencies
 find_package(OpenMP)
+find_package(Eigen3 3.4 CONFIG REQUIRED NO_MODULE)
 
 if(OPENMP_FOUND)
 	message (STATUS "OpenMP found ${OpenMP_CXX_LIB_NAMES}")

@@ -34,6 +34,7 @@
 #include <unordered_map>
 #include <map>
 #include "hdi/data/map_mem_eff.h"
+#include "hdi/data/sparse_mat.h"
 
 namespace hdi{
   namespace data{
@@ -47,6 +48,8 @@ namespace hdi{
     template void interpolateEmbeddingPositions(const Embedding<double>& input, Embedding<double>& output, const std::vector<std::map<unsigned int, double>>& weights);
     template void interpolateEmbeddingPositions(const Embedding<float>& input, Embedding<float>& output, const std::vector<hdi::data::MapMemEff<unsigned int, float>>& weights);
     template void interpolateEmbeddingPositions(const Embedding<double>& input, Embedding<double>& output, const std::vector<hdi::data::MapMemEff<unsigned int, double>>& weights);
+    template void interpolateEmbeddingPositions(const Embedding<float>& input, Embedding<float>& output, const std::vector<hdi::data::SparseVec<unsigned int, float>>& weights);
+    // template void interpolateEmbeddingPositions(const Embedding<double>& input, Embedding<double>& output, const std::vector<hdi::data::SparseVec<unsigned int, double>>& weights);
 
     template void copyAndRemap1D2DVertical(const Embedding<float>& input, Embedding<float>& output, const std::vector<float>& weights);
     template void copyAndRemap1D2DVertical(const Embedding<double>& input, Embedding<double>& output, const std::vector<double>& weights);

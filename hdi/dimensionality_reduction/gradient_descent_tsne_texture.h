@@ -41,6 +41,7 @@
 #include <unordered_map>
 #include "hdi/data/embedding.h"
 #include "hdi/data/map_mem_eff.h"
+#include "hdi/data/sparse_mat.h"
 #include "gpgpu_sne/gpgpu_sne_compute.h"
 #include "gpgpu_sne/gpgpu_sne_raster.h"
 #include "tsne_parameters.h"
@@ -53,13 +54,13 @@ namespace hdi {
     Implementation of the tSNE algorithm with sparse and user-defined probabilities
     \author Nicola Pezzotti
     */
+    template <typename sparse_scalar_matrix_type = std::vector<hdi::data::SparseVec<uint32_t, float> > >
     class GradientDescentTSNETexture {
     public:
 #ifndef __APPLE__
       typedef enum { RASTER, COMPUTE_SHADER, AUTO_DETECT } GpgpuSneType;
 #endif
       typedef float scalar_type;
-      typedef std::vector<hdi::data::MapMemEff<uint32_t, float>> sparse_scalar_matrix_type;
       typedef std::vector<scalar_type> scalar_vector_type;
       typedef uint32_t data_handle_type;
 
@@ -156,10 +157,10 @@ namespace hdi {
       scalar_type _normalization_Q; //! Normalization factor of Q - Z in the original paper
 
 #ifndef __APPLE__
-      GpgpuSneCompute _gpgpu_compute_tsne;
+      GpgpuSneCompute<sparse_scalar_matrix_type> _gpgpu_compute_tsne;
       GpgpuSneType _gpgpu_type;
 #endif // __APPLE__
-      GpgpuSneRaster _gpgpu_raster_tsne;
+      GpgpuSneRaster<sparse_scalar_matrix_type> _gpgpu_raster_tsne;
 
       std::array<scalar_type, 4> _temp;
 

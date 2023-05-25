@@ -41,6 +41,7 @@
 #include <unordered_map>
 #include "hdi/data/embedding.h"
 #include "hdi/data/map_mem_eff.h"
+#include "hdi/data/sparse_mat.h"
 #include "tsne_parameters.h"
 
 
@@ -51,7 +52,7 @@ namespace hdi{
       Implementation of the tSNE algorithm with sparse and user-defined probabilities
       \author Nicola Pezzotti
     */
-    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::MapMemEff<uint32_t,float>>>
+    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::SparseVec<uint32_t,float>>>
     class SparseTSNEUserDefProbabilities{
     public:
       typedef scalar scalar_type;

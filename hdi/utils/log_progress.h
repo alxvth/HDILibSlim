@@ -66,8 +66,8 @@ namespace hdi{
 #if defined(_OPENMP)
         if(omp_get_thread_num() == 0){
 #endif
-          double perc = double(_current_step)/_num_steps;
-          int tick = perc*(_num_ticks+1);
+          double perc = static_cast<double>(_current_step)/_num_steps;
+          int tick = static_cast<int>(perc*(_num_ticks+1));
           if(tick > _current_tick){
             ++_current_tick;
             std::stringstream ss;

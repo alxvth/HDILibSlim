@@ -69,6 +69,8 @@
 #include <vector>
 #include <unordered_map>
 #include <map>
+#include <type_traits>
+#include "hdi/data/sparse_mat.h"
 
 #ifdef __USE_GCD__
 #include <dispatch/dispatch.h>
@@ -184,22 +186,47 @@ namespace hdi{
         unsigned int ind1, ind2;
         hp_scalar_type q_ij_1;
         ind1 = j * _emb_dimension;
-        for(auto elem: sparse_matrix[j]) {
-          // Compute pairwise distance and Q-value
-          q_ij_1 = 1.0;
-          ind2 = elem.first * _emb_dimension;
-          for(unsigned int d = 0; d < _emb_dimension; d++)
-            buff[d] = _emb_positions[ind1 + d] - _emb_positions[ind2 + d]; //buff contains (yi-yj) per each _emb_dimension
-          for(unsigned int d = 0; d < _emb_dimension; d++)
-            q_ij_1 += buff[d] * buff[d];
+        if constexpr (std::is_same_v<sparse_scalar_matrix, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (Eigen::SparseVector<float>::InnerIterator it(sparse_matrix[j].memory()); it; ++it) {
+            // Compute pairwise distance and Q-value
+            q_ij_1 = 1.0;
+            ind2 = it.index() * _emb_dimension;
+            for (unsigned int d = 0; d < _emb_dimension; d++)
+              buff[d] = _emb_positions[ind1 + d] - _emb_positions[ind2 + d]; //buff contains (yi-yj) per each _emb_dimension
+            for (unsigned int d = 0; d < _emb_dimension; d++)
+              q_ij_1 += buff[d] * buff[d];
 
-          hp_scalar_type p_ij = elem.second;
-          hp_scalar_type res = hp_scalar_type(p_ij) * multiplier / q_ij_1 / n;
+            hp_scalar_type p_ij = it.value();
+            hp_scalar_type res = hp_scalar_type(p_ij) * multiplier / q_ij_1 / n;
 
-          // Sum positive force
-          for(unsigned int d = 0; d < _emb_dimension; d++)
-            pos_f[ind1 + d] += res * buff[d] * multiplier; //(p_ij*q_j*mult) * (yi-yj)
+            // Sum positive force
+            for (unsigned int d = 0; d < _emb_dimension; d++)
+              pos_f[ind1 + d] += res * buff[d] * multiplier; //(p_ij*q_j*mult) * (yi-yj)
+          }
+
         }
+        else // MapMemEff
+        {
+          for (auto elem : sparse_matrix[j]) {
+            // Compute pairwise distance and Q-value
+            q_ij_1 = 1.0;
+            ind2 = elem.first * _emb_dimension;
+            for (unsigned int d = 0; d < _emb_dimension; d++)
+              buff[d] = _emb_positions[ind1 + d] - _emb_positions[ind2 + d]; //buff contains (yi-yj) per each _emb_dimension
+            for (unsigned int d = 0; d < _emb_dimension; d++)
+              q_ij_1 += buff[d] * buff[d];
+
+            hp_scalar_type p_ij = elem.second;
+            hp_scalar_type res = hp_scalar_type(p_ij) * multiplier / q_ij_1 / n;
+
+            // Sum positive force
+            for (unsigned int d = 0; d < _emb_dimension; d++)
+              pos_f[ind1 + d] += res * buff[d] * multiplier; //(p_ij*q_j*mult) * (yi-yj)
+          }
+
+        }
+
       }
 #ifdef __USE_GCD__
       );

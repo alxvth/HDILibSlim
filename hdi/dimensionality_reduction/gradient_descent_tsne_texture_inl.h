@@ -40,11 +40,13 @@
 #include "hdi/utils/scoped_timers.h"
 #include "sptree.h"
 #include <random>
+#include <type_traits>
 
 namespace hdi {
   namespace dr {
 
-    GradientDescentTSNETexture::GradientDescentTSNETexture() :
+    template <typename sparse_scalar_matrix_type>
+    GradientDescentTSNETexture<sparse_scalar_matrix_type>::GradientDescentTSNETexture() :
       _initialized(false),
       _logger(nullptr),
       _exaggeration_baseline(1)
@@ -53,9 +55,12 @@ namespace hdi {
       _gpgpu_type = AUTO_DETECT;
 #endif
     }
+    template GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::GradientDescentTSNETexture();
+    template GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::GradientDescentTSNETexture();
 
 #ifndef __APPLE__
-    void GradientDescentTSNETexture::setType(GpgpuSneType tsne_type) {
+    template <typename sparse_scalar_matrix_type>
+    void GradientDescentTSNETexture<sparse_scalar_matrix_type>::setType(GpgpuSneType tsne_type) {
       if (tsne_type == AUTO_DETECT)
       {
         //resolve the optimal type to use based on the available OpenGL version
@@ -72,18 +77,27 @@ namespace hdi {
       else
         _gpgpu_type = tsne_type;
     }
+    template void GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::setType(GpgpuSneType);
+    template void GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::setType(GpgpuSneType);
 #endif
 
-    void GradientDescentTSNETexture::reset() {
+    template <typename sparse_scalar_matrix_type>
+    void GradientDescentTSNETexture<sparse_scalar_matrix_type>::reset() {
       _initialized = false;
     }
+    template void GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::reset();
+    template void GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::reset();
 
-    void GradientDescentTSNETexture::clear() {
+    template <typename sparse_scalar_matrix_type>
+    void GradientDescentTSNETexture<sparse_scalar_matrix_type>::clear() {
       _embedding->clear();
       _initialized = false;
     }
+    template void GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::clear();
+    template void GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::clear();
 
-    void GradientDescentTSNETexture::getEmbeddingPosition(scalar_vector_type& embedding_position, data_handle_type handle) const {
+    template <typename sparse_scalar_matrix_type>
+    void GradientDescentTSNETexture<sparse_scalar_matrix_type>::getEmbeddingPosition(scalar_vector_type& embedding_position, data_handle_type handle) const {
       if (!_initialized) {
         throw std::logic_error("Algorithm must be initialized before ");
       }
@@ -92,12 +106,15 @@ namespace hdi {
         (*_embedding_container)[i] = (*_embedding_container)[handle*_params._embedding_dimensionality + i];
       }
     }
+    template void GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::getEmbeddingPosition(scalar_vector_type&, data_handle_type) const;
+    template void GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::getEmbeddingPosition(scalar_vector_type&, data_handle_type) const;
 
 
     /////////////////////////////////////////////////////////////////////////
 
 
-    void GradientDescentTSNETexture::initialize(const sparse_scalar_matrix_type& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params) {
+    template <typename sparse_scalar_matrix_type>
+    void GradientDescentTSNETexture<sparse_scalar_matrix_type>::initialize(const sparse_scalar_matrix_type& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params) {
       utils::secureLog(_logger, "Initializing tSNE...");
       {//Aux data
         _params = params;
@@ -133,8 +150,11 @@ namespace hdi {
       _initialized = true;
       utils::secureLog(_logger, "Initialization complete!");
     }
+    template void GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::initialize(const std::vector<hdi::data::SparseVec<uint32_t, float>>&, data::Embedding<scalar_type>*, TsneParameters);
+    template void GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::initialize(const std::vector<hdi::data::MapMemEff<uint32_t, float>>&, data::Embedding<scalar_type>*, TsneParameters);
 
-    void GradientDescentTSNETexture::initializeWithJointProbabilityDistribution(const sparse_scalar_matrix_type& distribution, data::Embedding<scalar_type>* embedding, TsneParameters params) {
+    template <typename sparse_scalar_matrix_type>
+    void GradientDescentTSNETexture<sparse_scalar_matrix_type>::initializeWithJointProbabilityDistribution(const sparse_scalar_matrix_type& distribution, data::Embedding<scalar_type>* embedding, TsneParameters params) {
       utils::secureLog(_logger, "Initializing tSNE with a user-defined joint-probability distribution...");
       {//Aux data
         _params = params;
@@ -167,8 +187,11 @@ namespace hdi {
       _initialized = true;
       utils::secureLog(_logger, "Initialization complete!");
     }
+    template void GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::initializeWithJointProbabilityDistribution(const std::vector<hdi::data::SparseVec<uint32_t, float>>&, data::Embedding<scalar_type>*, TsneParameters);
+    template void GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::initializeWithJointProbabilityDistribution(const std::vector<hdi::data::MapMemEff<uint32_t, float>>&, data::Embedding<scalar_type>*, TsneParameters);
 
-    void GradientDescentTSNETexture::updateParams(TsneParameters params) {
+    template <typename sparse_scalar_matrix_type>
+    void GradientDescentTSNETexture<sparse_scalar_matrix_type>::updateParams(TsneParameters params) {
       if (!_initialized) {
         throw std::runtime_error("GradientDescentTSNETexture must be initialized before updating the tsne parameters");
       }
@@ -180,27 +203,55 @@ namespace hdi {
       _gpgpu_raster_tsne.updateParams(params);
 #endif
     }
+    template void GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::updateParams(TsneParameters);
+    template void GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::updateParams(TsneParameters);
 
-    void GradientDescentTSNETexture::computeHighDimensionalDistribution(const sparse_scalar_matrix_type& probabilities) {
+
+    template <typename sparse_scalar_matrix_type>
+    void GradientDescentTSNETexture<sparse_scalar_matrix_type>::computeHighDimensionalDistribution(const sparse_scalar_matrix_type& probabilities) {
       utils::secureLog(_logger, "Computing high-dimensional joint probability distribution...");
 
       const int n = getNumberOfDataPoints();
-      for (int j = 0; j < n; ++j) {
-        for (auto& elem : probabilities[j]) {
-          scalar_type v0 = elem.second;
-          auto iter = probabilities[elem.first].find(j);
-          scalar_type v1 = 0.;
-          if (iter != probabilities[elem.first].end())
-            v1 = iter->second;
+      if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+      {
+        for (int j = 0; j < n; ++j)
+          _P[j].resize(n);
+      }
 
-          _P[j][elem.first] = static_cast<scalar_type>((v0 + v1)*0.5);
-          _P[elem.first][j] = static_cast<scalar_type>((v0 + v1)*0.5);
+      for (int j = 0; j < n; ++j) {
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (Eigen::SparseVector<float>::InnerIterator it(probabilities[j].memory()); it; ++it) {
+            scalar_type v0 = it.value();
+            scalar_type v1 = 0.;
+            if (probabilities[it.index()].coeff(j) != 0.0)
+              v1 = probabilities[it.index()].coeff(j);
+
+            _P[j][it.index()] = static_cast<scalar_type>((v0 + v1) * 0.5);
+            _P[it.index()][j] = static_cast<scalar_type>((v0 + v1) * 0.5);
+          }
+        }
+        else // MapMemEff
+        {
+          for (auto& elem : probabilities[j]) {
+            scalar_type v0 = elem.second;
+            auto iter = probabilities[elem.first].find(j);
+            scalar_type v1 = 0.;
+            if (iter != probabilities[elem.first].end())
+              v1 = iter->second;
+
+            _P[j][elem.first] = static_cast<scalar_type>((v0 + v1) * 0.5);
+            _P[elem.first][j] = static_cast<scalar_type>((v0 + v1) * 0.5);
+          }
         }
       }
     }
+    template void GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::computeHighDimensionalDistribution(const std::vector<hdi::data::SparseVec<uint32_t, float>>&);
+    template void GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::computeHighDimensionalDistribution(const std::vector<hdi::data::MapMemEff<uint32_t, float>>&);
 
 
-    void GradientDescentTSNETexture::initializeEmbeddingPosition(int seed, double multiplier) {
+    template <typename sparse_scalar_matrix_type>
+    void GradientDescentTSNETexture<sparse_scalar_matrix_type>::initializeEmbeddingPosition(int seed, double multiplier) {
       utils::secureLog(_logger, "Initializing the embedding...");
 
       if (seed < 0) {
@@ -227,8 +278,11 @@ namespace hdi {
         _embedding->dataAt(i, 1) = y;
       }
     }
+    template void GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::initializeEmbeddingPosition(int, double);
+    template void GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::initializeEmbeddingPosition(int, double);
 
-    void GradientDescentTSNETexture::doAnIteration(double mult) {
+    template <typename sparse_scalar_matrix_type>
+    void GradientDescentTSNETexture<sparse_scalar_matrix_type>::doAnIteration(double mult) {
       if (!_initialized) {
         throw std::logic_error("Cannot compute a gradient descent iteration on unitialized data");
       }
@@ -242,8 +296,11 @@ namespace hdi {
 
       doAnIterationImpl(mult);
     }
+    template void GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::doAnIteration(double);
+    template void GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::doAnIteration(double);
 
-    double GradientDescentTSNETexture::exaggerationFactor() {
+    template <typename sparse_scalar_matrix_type>
+    double GradientDescentTSNETexture<sparse_scalar_matrix_type>::exaggerationFactor() {
       scalar_type exaggeration = _exaggeration_baseline;
 
       if (_iteration <= _params._remove_exaggeration_iter) {
@@ -258,21 +315,27 @@ namespace hdi {
 
       return exaggeration;
     }
+    template double GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::exaggerationFactor();
+    template double GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::exaggerationFactor();
 
-    void GradientDescentTSNETexture::doAnIterationImpl(double mult) {
+    template <typename sparse_scalar_matrix_type>
+    void GradientDescentTSNETexture<sparse_scalar_matrix_type>::doAnIterationImpl(double mult) {
       // Compute gradient of the KL function using a compute shader approach
 #ifndef __APPLE__
       if (_gpgpu_type == COMPUTE_SHADER)
-        _gpgpu_compute_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
+        _gpgpu_compute_tsne.compute(_embedding, exaggerationFactor(), static_cast<float>(_iteration), mult);
       else
-        _gpgpu_raster_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
+        _gpgpu_raster_tsne.compute(_embedding, exaggerationFactor(), static_cast<float>(_iteration), mult);
 #else
       _gpgpu_raster_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
 #endif
       ++_iteration;
     }
+    template void GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::doAnIterationImpl(double);
+    template void GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::doAnIterationImpl(double);
 
-    double GradientDescentTSNETexture::computeKullbackLeiblerDivergence() {
+    template <typename sparse_scalar_matrix_type>
+    double GradientDescentTSNETexture<sparse_scalar_matrix_type>::computeKullbackLeiblerDivergence() {
       const int n = _embedding->numDataPoints();
 
       //std::vector<float> _Q(n * n);
@@ -305,32 +368,64 @@ namespace hdi {
       double kl = 0;
 
       for (int i = 0; i < n; ++i) {
-        for (const auto& pij : _P[i]) {
-          uint32_t j = pij.first;
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (Eigen::SparseVector<float>::InnerIterator it(_P[i].memory()); it; ++it) {
+            uint32_t j = it.index();
 
-          // Calculate Qij
-          const double euclidean_dist_sq(
-            utils::euclideanDistanceSquared<float>(
-              _embedding->getContainer().begin() + j * _params._embedding_dimensionality,
-              _embedding->getContainer().begin() + (j + 1)*_params._embedding_dimensionality,
-              _embedding->getContainer().begin() + i * _params._embedding_dimensionality,
-              _embedding->getContainer().begin() + (i + 1)*_params._embedding_dimensionality
+            // Calculate Qij
+            const double euclidean_dist_sq(
+              utils::euclideanDistanceSquared<float>(
+                _embedding->getContainer().begin() + j * _params._embedding_dimensionality,
+                _embedding->getContainer().begin() + (j + 1) * _params._embedding_dimensionality,
+                _embedding->getContainer().begin() + i * _params._embedding_dimensionality,
+                _embedding->getContainer().begin() + (i + 1) * _params._embedding_dimensionality
               )
-          );
-          const double v = 1. / (1. + euclidean_dist_sq);
+            );
+            const double v = 1. / (1. + euclidean_dist_sq);
 
-          double p = pij.second / (2 * n);
-          float klc = p * std::log(p / (v / sum_Q));
-          //if (klc > 0.00001)
-          //{
-          //  std::cout << "KLC: " << klc << " i: " << i << "neighbour: " << neighbour_id << std::endl;
-          //}
+            double p = it.value() / (2 * n);
+            float klc = p * std::log(p / (v / sum_Q));
+            //if (klc > 0.00001)
+            //{
+            //  std::cout << "KLC: " << klc << " i: " << i << "neighbour: " << neighbour_id << std::endl;
+            //}
 
-          kl += klc;
+            kl += klc;
+          }
+        }
+        else // MapMemEff
+        {
+          for (const auto& pij : _P[i]) {
+            uint32_t j = pij.first;
+
+            // Calculate Qij
+            const double euclidean_dist_sq(
+              utils::euclideanDistanceSquared<float>(
+                _embedding->getContainer().begin() + j * _params._embedding_dimensionality,
+                _embedding->getContainer().begin() + (j + 1) * _params._embedding_dimensionality,
+                _embedding->getContainer().begin() + i * _params._embedding_dimensionality,
+                _embedding->getContainer().begin() + (i + 1) * _params._embedding_dimensionality
+              )
+            );
+            const double v = 1. / (1. + euclidean_dist_sq);
+
+            double p = pij.second / (2 * n);
+            float klc = p * std::log(p / (v / sum_Q));
+            //if (klc > 0.00001)
+            //{
+            //  std::cout << "KLC: " << klc << " i: " << i << "neighbour: " << neighbour_id << std::endl;
+            //}
+
+            kl += klc;
+          }
         }
       }
       return kl;
     }
+    template double GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::computeKullbackLeiblerDivergence();
+    template double GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::computeKullbackLeiblerDivergence();
+
   }
 }
 #endif

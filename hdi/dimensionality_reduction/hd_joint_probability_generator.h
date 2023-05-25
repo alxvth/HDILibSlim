@@ -43,6 +43,7 @@
 #include <random>
 #include <unordered_set>
 #include "hdi/data/map_mem_eff.h"
+#include "hdi/data/sparse_mat.h"
 
 namespace hdi{
   namespace dr{
@@ -56,7 +57,7 @@ namespace hdi{
       \author Nicola Pezzotti
       \warning Due to numeric limits, the output matrix is not normalized. In order to have a joint-probability distribution each cell must be divided by 2*num_dps
     */
-    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::MapMemEff<unsigned int, float> >>
+    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::SparseVec<uint32_t, float> >>
     class HDJointProbabilityGenerator {
     public:
       typedef scalar scalar_type;
@@ -71,12 +72,11 @@ namespace hdi{
       public:
         scalar_type _perplexity;            //! Perplexity value in evert distribution.
         int         _perplexity_multiplier; //! Multiplied by the perplexity gives the number of nearest neighbors used
-        int         _num_trees;             //! Number of trees used int the AKNN
-        int         _num_checks;            //! Number of checks used int the AKNN
         hdi::dr::knn_library _aknn_algorithm;
         hdi::dr::knn_distance_metric _aknn_metric;
-        double      _aknn_algorithmP1;
-        double      _aknn_algorithmP2;
+        size_t      _aknn_hnsw_M;
+        size_t      _aknn_hnsw_eff;
+        int         _aknn_annoy_num_trees;
       };
 
       //!
@@ -94,7 +94,8 @@ namespace hdi{
       public:
         scalar_type _total_time;
         scalar_type _trees_construction_time;
-        scalar_type _aknn_time;
+        scalar_type _init_knn_time;
+        scalar_type _comp_knn_time;
         scalar_type _distribution_time;
       };
 
@@ -118,8 +119,6 @@ namespace hdi{
       const Statistics& statistics(){ return _statistics; }
 
     private:
-      //! Compute the euclidean distances between points
-      void computeHighDimensionalDistances(/*const*/ scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, std::vector<scalar_type>& distances_squared, std::vector<int>& indices, Parameters& params);
       //! Compute a gaussian distribution for each data-point
       void computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<int>& indices, sparse_scalar_matrix& matrix, Parameters& params);
       //! Compute a gaussian distribution for each data-point

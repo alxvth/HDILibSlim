@@ -44,6 +44,7 @@
 #include <unordered_set>
 #include "hdi/data/flow_model.h"
 #include "hdi/data/map_mem_eff.h"
+#include "hdi/data/sparse_mat.h"
 
 namespace hdi {
   namespace dr {
@@ -55,7 +56,7 @@ namespace hdi {
       Algorithm for the generation of a hierarchical representation of the data as presented in the Hierarchical Stochastic Neighbor Embedding paper
       \author Nicola Pezzotti
     */
-    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::MapMemEff<uint32_t, float> > >
+    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::SparseVec<uint32_t, float> > >
     class HierarchicalSNE {
     public:
       typedef sparse_scalar_matrix sparse_scalar_matrix_type;
@@ -95,13 +96,15 @@ namespace hdi {
         Parameters();
         int _seed; //! Seed for random algorithms. If a negative value is provided, a time-based seed is used.
         unsigned_int_type _num_neighbors; //! Number of neighbors used in the KNN graph
-        unsigned_int_type _aknn_num_trees; //! Number of trees in the Approximated KNN algorithm (See Approximated and User Steerable tSNE paper)
-        unsigned_int_type _aknn_num_checks; //! Number of checks in the Approximated KNN algorithm (See Approximated and User Steerable tSNE paper)
 
         hdi::dr::knn_library _aknn_algorithm;   //! used to switch between knn algorithms
         hdi::dr::knn_distance_metric _aknn_metric; // knn distance metric
-        double            _aknn_algorithmP1; //! used for HNSW
-        double            _aknn_algorithmP2; //! used for HNSW
+
+        int _aknn_annoy_num_trees; //! Number of checks in the Approximated KNN algorithm (used for Annoy)
+
+        size_t _aknn_hnsw_M; //! used for HNSW
+        size_t _aknn_hnsw_eff; //! used for HNSW
+
             /////////////////// Landmark Selection ////////////////////////
         bool _monte_carlo_sampling; //! Select landmarks with a Markov Chain Monte Carlo sampling (MCMCS)
         unsigned_int_type _mcmcs_num_walks; //! Num walks per landmark in the MCMCS (beta in the paper)
@@ -135,6 +138,7 @@ namespace hdi {
       public:
         scalar_type _total_time;
         scalar_type _init_knn_time; //! Time requested for the initialization of the KNN graph at the first scale
+        scalar_type _comp_knn_time; //! Time requested for the computation of the KNN graph at the first scale
         scalar_type _init_probabilities_time; //! Time requested for the computation of transision probabilities
         scalar_type _init_fmc_time; //! Time requested for the computation of the FMC from the KNN graph
 
@@ -303,8 +307,8 @@ namespace hdi {
       static void computeAoI(const HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>& hsne, unsigned_int_type scale, const std::vector<unsigned_int_type>& idxes, Functor& functor);
 
     private:
-      //! Compute the neighborhood graph
-      void computeNeighborhoodGraph(scalar_vector_type& distance_based_probabilities, std::vector<int>& neighborhood_graph);
+      //! Compute FMC
+      void computeFMC(scalar_vector_type& distance_based_probabilities, std::vector<int>& neighborhood_graph);
       //! Initialize the first scale
       void initializeFirstScale();
       //! Initialize the first scale

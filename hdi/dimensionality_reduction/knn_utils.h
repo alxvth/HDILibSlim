@@ -39,9 +39,11 @@
 #include <mutex>
 #include <atomic>
 
+#include "hdi/utils/abstract_log.h"
+
 namespace hdi{
   namespace dr{
-  
+
     enum knn_library
     {
       KNN_HNSW = 0,
@@ -52,10 +54,27 @@ namespace hdi{
     {
       KNN_METRIC_EUCLIDEAN = 0,
       KNN_METRIC_COSINE = 1,
-      KNN_METRIC_INNER_PRODUCT = 2,
+      KNN_METRIC_INNER_PRODUCT = 2, // DOT
       KNN_METRIC_MANHATTAN = 3,
       KNN_METRIC_HAMMING = 4,
-      KNN_METRIC_DOT = 5
+    };
+
+    struct knn_params
+    {
+      knn_library lib = knn_library::KNN_HNSW;
+      knn_distance_metric metric = knn_distance_metric::KNN_METRIC_EUCLIDEAN;
+      size_t num_neigh = 91;
+
+      size_t hnsw_M = 16;             // hnsw parameter
+      size_t ef_construction = 200;   // hnsw parameter
+
+      int num_trees = 4;           // annoy parameter
+    };
+
+    struct knn_stats
+    {
+      float _init_knn_time = 0.f;
+      float _comp_knn_time = 0.f;
     };
 
 	//! Returns the number of supported KNN libraries. 
@@ -71,6 +90,10 @@ namespace hdi{
 	//! This function is especially useful for building user-interfaces where the user can select both a KNN library and a distance metric since not every KNN library supports the same distance metric. 
 	//! Alternatively it can be used to offer a look-up table to translate the currently set KNN distance metric index back to human readable text.
     std::map<std::string, int> supported_knn_library_distance_metrics(int knn_lib);
+
+    template <typename scalar_type, typename integer_type, typename stats_type>
+    void computeHighDimensionalDistances(const scalar_type* high_dimensional_data, size_t num_dim, size_t num_dps, knn_params params, std::vector<scalar_type>& distances_squared, std::vector<integer_type>& neighborhood_indices, stats_type* statistics = nullptr, utils::AbstractLog* logger = nullptr);
+
   }
 }
 

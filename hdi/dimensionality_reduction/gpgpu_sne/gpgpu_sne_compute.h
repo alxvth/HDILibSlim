@@ -37,6 +37,7 @@
 #include "hdi/data/shader.h"
 #include "hdi/data/embedding.h"
 #include "hdi/data/map_mem_eff.h"
+#include "hdi/data/sparse_mat.h"
 #include "hdi/dimensionality_reduction/tsne_parameters.h"
 #include "field_computation.h"
 
@@ -52,6 +53,7 @@ namespace hdi {
     Computation class for texture-based t-SNE using compute shaders
     \author Julian Thijssen
     */
+    template <typename sparse_scalar_matrix_type = std::vector<hdi::data::SparseVec<uint32_t, float> > >
     class GpgpuSneCompute {
     public:
       struct Point2D {
@@ -68,7 +70,6 @@ namespace hdi {
       };
 
       typedef hdi::data::Embedding<float> embedding_type;
-      typedef std::vector<hdi::data::MapMemEff<uint32_t, float>> sparse_scalar_matrix_type;
 
     public:
       GpgpuSneCompute();

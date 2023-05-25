@@ -35,6 +35,7 @@
 #define HD_JOINT_PROBABILITY_GENERATOR_INL
 
 #include "hdi/dimensionality_reduction/hd_joint_probability_generator.h"
+#include "hdi/dimensionality_reduction/knn_utils.h"
 #include "hdi/utils/math_utils.h"
 #include "hdi/utils/log_helper_functions.h"
 #include "hdi/utils/scoped_timers.h"
@@ -44,35 +45,10 @@
 #include <unordered_set>
 #include <numeric>
 #include <thread>
+#include <type_traits>
 #if defined(_OPENMP)
 #include "omp.h"
 #endif
-
-#ifdef HNSWLIB_FOUND
-#ifdef _MSC_VER
-#if (_MSC_VER >= 1910)
-#include "hnswlib/hnswlib.h"
-#include "hnswlib/space_l2.h"
-#define HNSWLIB_SUPPORTED
-#endif //__cplusplus >=201103
-#else // _MSC_VER
-#include "hnswlib/hnswlib.h"
-#include "hnswlib/space_l2.h"
-#define HNSWLIB_SUPPORTED
-#endif
-#endif // HNSWLIB_FOUND
-
-#ifdef __USE_ANNOY__
-#ifndef WIN32
-#define isnan std::isnan
-#endif
-#include "annoylib.h"
-#include "kissrandom.h"
-#ifndef WIN32
-#undef isnan
-#endif
-#endif // __USE_ANNOY__
-
 
 #ifdef __USE_GCD__
 #include <dispatch/dispatch.h>
@@ -87,12 +63,11 @@ namespace hdi {
     HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::Parameters::Parameters() :
       _perplexity(30),
       _perplexity_multiplier(3),
-      _num_trees(4),
-      _num_checks(1024),
       _aknn_algorithm(hdi::dr::KNN_ANNOY),
       _aknn_metric(hdi::dr::KNN_METRIC_EUCLIDEAN),
-      _aknn_algorithmP1(16), // default parameter for HNSW
-      _aknn_algorithmP2(200) // default parameter for HNSW
+      _aknn_annoy_num_trees(4),
+      _aknn_hnsw_M(16), // default parameter for HNSW
+      _aknn_hnsw_eff(200) // default parameter for HNSW
     {}
 
     /////////////////////////////////////////////////////////////////////////
@@ -101,7 +76,8 @@ namespace hdi {
     HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::Statistics::Statistics() :
       _total_time(0),
       _trees_construction_time(0),
-      _aknn_time(0),
+      _init_knn_time(0),
+      _comp_knn_time(0),
       _distribution_time(0)
     {}
 
@@ -109,7 +85,8 @@ namespace hdi {
     void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::Statistics::reset() {
       _total_time = 0;
       _trees_construction_time = 0;
-      _aknn_time = 0;
+      _init_knn_time = 0;
+      _comp_knn_time = 0;
       _distribution_time = 0;
     }
 
@@ -118,7 +95,8 @@ namespace hdi {
       utils::secureLog(logger, "\n-------- HD Joint Probability Generator Statistics -----------");
       utils::secureLogValue(logger, "Total time", _total_time);
       utils::secureLogValue(logger, "\tTrees construction time", _trees_construction_time, true, 1);
-      utils::secureLogValue(logger, "\tAKNN time", _aknn_time, true, 3);
+      utils::secureLogValue(logger, "\tAKNN initialization time", _init_knn_time, true, 3);
+      utils::secureLogValue(logger, "\tAKNN computation time", _comp_knn_time, true, 3);
       utils::secureLogValue(logger, "\tDistributions time", _distribution_time, true, 2);
       utils::secureLog(logger, "--------------------------------------------------------------\n");
     }
@@ -143,7 +121,9 @@ namespace hdi {
       std::vector<scalar_type>  distances_squared;
       std::vector<int>      indices;
 
-      computeHighDimensionalDistances(high_dimensional_data, num_dim, num_dps, distances_squared, indices, params);
+      size_t nn = static_cast<size_t>(params._perplexity * params._perplexity_multiplier) + 1;
+      knn_params ann_params{ params._aknn_algorithm, params._aknn_metric, nn, params._aknn_hnsw_M, params._aknn_hnsw_eff, params._aknn_annoy_num_trees };
+      computeHighDimensionalDistances<scalar_type, int, HDJointProbabilityGenerator<scalar_type, sparse_scalar_matrix>::Statistics>(high_dimensional_data, num_dim, num_dps, ann_params, distances_squared, indices, &_statistics, _logger);
       computeGaussianDistributions(distances_squared, indices, distribution, params);
       symmetrize(distribution);
     }
@@ -158,7 +138,9 @@ namespace hdi {
       std::vector<scalar_type>  distances_squared;
       std::vector<int>      indices;
 
-      computeHighDimensionalDistances(high_dimensional_data, num_dim, num_dps, distances_squared, indices, params);
+      size_t nn = static_cast<size_t>(params._perplexity * params._perplexity_multiplier) + 1;
+      knn_params ann_params{ params._aknn_algorithm, params._aknn_metric, nn, params._aknn_hnsw_M, params._aknn_hnsw_eff, params._aknn_annoy_num_trees };
+      computeHighDimensionalDistances<scalar_type, int, HDJointProbabilityGenerator<scalar_type, sparse_scalar_matrix>::Statistics>(high_dimensional_data, num_dim, num_dps, ann_params, distances_squared, indices, &_statistics, _logger);
       computeGaussianDistributions(distances_squared, indices, distribution, params);
     }
 
@@ -169,167 +151,11 @@ namespace hdi {
       hdi::utils::secureLog(_logger, "Computing the HD joint probability distribution...");
 
       std::vector<scalar_type>  distances_squared;
-      computeHighDimensionalDistances(high_dimensional_data, num_dim, num_dps, distances_squared, indices, params);
+
+      size_t nn = static_cast<unsigned int>(params._perplexity * params._perplexity_multiplier) + 1;
+      knn_params ann_params{ params._aknn_algorithm, params._aknn_metric, nn, params._aknn_hnsw_M, params._aknn_hnsw_eff, params._aknn_annoy_num_trees };
+      computeHighDimensionalDistances<scalar_type, int, HDJointProbabilityGenerator<scalar_type, sparse_scalar_matrix>::Statistics>(high_dimensional_data, num_dim, num_dps, ann_params, distances_squared, indices, &_statistics, _logger);
       computeGaussianDistributions(distances_squared, indices, probabilities, params);
-    }
-
-    template <typename scalar, typename sparse_scalar_matrix>
-
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::computeHighDimensionalDistances(scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, std::vector<scalar_type>& distances_squared, std::vector<int>& indices, Parameters& params) {
-
-      // Fallback to ANNOY if others are not supported
-#ifndef HNSWLIB_SUPPORTED
-      if (params._aknn_algorithm == hdi::dr::KNN_HNSW)
-      {
-        hdi::utils::secureLog(_logger, "HNSW not available, falling back to ANNOY");
-        params._aknn_algorithm = hdi::dr::KNN_ANNOY;
-      }
-#endif // HNSWLIB_SUPPORTED
-
-#ifndef __USE_ANNOY__
-      if (params._aknn_algorithm == hdi::dr::KNN_ANNOY)
-      {
-        params._aknn_algorithm = hdi::dr::KNN_HNSW;
-      }
-#endif // __USE_ANNOY__
-
-      if (params._aknn_algorithm == hdi::dr::KNN_HNSW)
-      {
-#ifdef HNSWLIB_SUPPORTED
-        hdi::utils::secureLog(_logger, "Computing approximated knn with HNSWLIB...");
-
-        hnswlib::SpaceInterface<float> *space = NULL;
-        switch (params._aknn_metric) {
-        case hdi::dr::KNN_METRIC_EUCLIDEAN:
-          space = new hnswlib::L2Space(num_dim);
-          break;
-        case hdi::dr::KNN_METRIC_INNER_PRODUCT:
-          space = new hnswlib::InnerProductSpace(num_dim);
-          break;
-        default:
-          space = new hnswlib::L2Space(num_dim);
-          break;
-        }
-
-        hnswlib::HierarchicalNSW<scalar> appr_alg(space, num_dps, params._aknn_algorithmP1, params._aknn_algorithmP2, 0);
-        {
-          utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._trees_construction_time);
-          appr_alg.addPoint((void*)high_dimensional_data, (std::size_t) 0);
-          unsigned num_threads = std::thread::hardware_concurrency();
-          hnswlib::ParallelFor(1, num_dps, num_threads, [&](size_t i, size_t threadId) {
-            appr_alg.addPoint((void*)(high_dimensional_data + (i*num_dim)), (hnswlib::labeltype) i);
-          });
-        }
-        const unsigned int nn = params._perplexity*params._perplexity_multiplier + 1;
-        distances_squared.resize(num_dps*nn);
-        indices.resize(num_dps*nn);
-        {
-          utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._aknn_time);
-#pragma omp parallel for
-          for (int i = 0; i < num_dps; ++i)
-          {
-            auto top_candidates = appr_alg.searchKnn(high_dimensional_data + (i*num_dim), (hnswlib::labeltype)nn);
-            while (top_candidates.size() > nn) {
-              top_candidates.pop();
-            }
-            auto *distances_offset = distances_squared.data() + (i*nn);
-            auto indices_offset = indices.data() + (i*nn);
-            int j = 0;
-            while (top_candidates.size() > 0) {
-              auto rez = top_candidates.top();
-              distances_offset[nn - j - 1] = rez.first;
-              indices_offset[nn - j - 1] = appr_alg.getExternalLabel(rez.second);
-              top_candidates.pop();
-              ++j;
-            }
-          }
-        }
-#endif // HNSWLIB_SUPPORTED
-      }
-      else if (params._aknn_algorithm == hdi::dr::KNN_ANNOY)
-      {
-#ifdef __USE_ANNOY__
-        int k = (int)params._perplexity * params._perplexity_multiplier + 1;
-        int search_k = k * params._num_trees;
-
-        distances_squared.resize(num_dps * k);
-        indices.resize(num_dps * k);
-
-        Annoy::AnnoyIndexInterface<int32_t, double>* tree = nullptr;
-        switch (params._aknn_metric) {
-        case hdi::dr::KNN_METRIC_EUCLIDEAN:
-          hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          tree = new Annoy::AnnoyIndex<int32_t, double, Annoy::Euclidean, Annoy::Kiss64Random, Annoy::AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
-          break;
-        case hdi::dr::KNN_METRIC_COSINE:
-          hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Cosine distances ...");
-          tree = new Annoy::AnnoyIndex<int32_t, double, Annoy::Angular, Annoy::Kiss64Random, Annoy::AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
-          break;
-        case hdi::dr::KNN_METRIC_MANHATTAN:
-          hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Manhattan distances ...");
-          tree = new Annoy::AnnoyIndex<int32_t, double, Annoy::Manhattan, Annoy::Kiss64Random, Annoy::AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
-          break;
-          //case hdi::dr::KNN_METRIC_HAMMING:
-          //  hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          //  tree = new Annoy::AnnoyIndex<int, double, Annoy::Hamming, Kiss32Random>(num_dim);
-          //  break;
-        case hdi::dr::KNN_METRIC_DOT:
-          hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Dot product distances ...");
-          tree = new Annoy::AnnoyIndex<int32_t, double, Annoy::DotProduct, Annoy::Kiss64Random, Annoy::AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
-          break;
-        default:
-          hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          tree = new Annoy::AnnoyIndex<int32_t, double, Annoy::Euclidean, Annoy::Kiss64Random, Annoy::AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
-          break;
-        }
-
-        {
-          utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._trees_construction_time);
-
-          for (int i = 0; i < num_dps; ++i) {
-            double* vec = new double[num_dim];
-            for (int z = 0; z < num_dim; ++z) {
-              vec[z] = high_dimensional_data[i * num_dim + z];
-            }
-            tree->add_item(i, vec);
-          }
-          tree->build(params._num_trees);
-
-          // Sample check if it returns enough neighbors
-          std::vector<int> closest;
-          std::vector<double> closest_distances;
-          for (int n = 0; n < 100; n++) {
-            tree->get_nns_by_item(n, k, search_k, &closest, &closest_distances);
-            unsigned int neighbors_count = closest.size();
-            if (neighbors_count < k) {
-              printf("Requesting %d neighbors, but ANNOY returned only %u. Please increase search_k\n", k, neighbors_count);
-              return;
-            }
-          }
-        }
-
-        hdi::utils::secureLog(_logger, "Done building tree. Beginning nearest neighbor search... ");
-        {
-          utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._aknn_time);
-
-#pragma omp parallel for
-          for (int n = 0; n < num_dps; n++)
-          {
-            // Find nearest neighbors
-            std::vector<int> closest;
-            std::vector<double> closest_distances;
-            tree->get_nns_by_item(n, k, search_k, &closest, &closest_distances);
-
-            // Copy current row
-            for (unsigned int m = 0; m < k; m++) {
-              indices[n * k + m] = closest[m];
-              distances_squared[n * k + m] = closest_distances[m] * closest_distances[m];
-            }
-          }
-        }
-        delete tree;
-#endif // __USE_ANNOY__
-      }
     }
 
 
@@ -384,7 +210,7 @@ namespace hdi {
       utils::secureLog(_logger, "Computing joint-probability distribution...");
       const int n = distribution.size();
 
-      const unsigned int nn = params._perplexity*params._perplexity_multiplier + 1;
+      const unsigned int nn = static_cast<unsigned int>(params._perplexity * params._perplexity_multiplier) + 1;
 #ifdef __USE_GCD__
       __block scalar_vector_type temp_vector(distances_squared.size(), 0);
 #else
@@ -426,7 +252,7 @@ namespace hdi {
       utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._distribution_time);
       utils::secureLog(_logger, "Computing joint-probability distribution...");
 
-      const unsigned int nn = params._perplexity*params._perplexity_multiplier + 1;
+      const unsigned int nn = static_cast<unsigned int>(params._perplexity * params._perplexity_multiplier) + 1;
       const int n = indices.size() / nn;
 
 #ifdef __USE_GCD__
@@ -456,11 +282,23 @@ namespace hdi {
     void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::symmetrize(sparse_scalar_matrix& distribution) {
       const int n = distribution.size();
       for (int j = 0; j < n; ++j) {
-        for (auto& e : distribution[j]) {
-          const unsigned int i = e.first;
-          scalar new_val = (distribution[j][i] + distribution[i][j])*0.5;
-          distribution[j][i] = new_val;
-          distribution[i][j] = new_val;
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (Eigen::SparseVector<float>::InnerIterator it(distribution[j].memory()); it; ++it) {
+            const unsigned int i = it.index();
+            scalar new_val = (distribution[j][i] + distribution[i][j]) * 0.5;
+            distribution[j][i] = new_val;
+            distribution[i][j] = new_val;
+          }
+        }
+        else // MapMemEff
+        {
+          for (auto& e : distribution[j]) {
+            const unsigned int i = e.first;
+            scalar new_val = (distribution[j][i] + distribution[i][j]) * 0.5;
+            distribution[j][i] = new_val;
+            distribution[i][j] = new_val;
+          }
         }
       }
     }

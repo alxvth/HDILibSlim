@@ -137,7 +137,7 @@ const char* gpgpu_compute_fields_source = GLSL(430,
 );
 
 void RasterFieldComputation::generateTSNEKernel(float kernel_radius, std::vector<float>& kernel, float function_support) {
-  uint32_t kernel_width = kernel_radius * 2 + 1;
+  uint32_t kernel_width = static_cast<uint32_t>(kernel_radius) * 2 + 1;
 
   kernel.resize(kernel_width*kernel_width * 4);
 
@@ -178,7 +178,7 @@ void RasterFieldComputation::init(GLuint positionBuffer, float function_support)
   }
 
   float kernel_radius = 32;
-  uint32_t kernel_width = kernel_radius * 2 + 1;
+  uint32_t kernel_width = static_cast<uint32_t>(kernel_radius) * 2 + 1;
 
   // Generate fields texture
   glGenTextures(1, &_field_texture);

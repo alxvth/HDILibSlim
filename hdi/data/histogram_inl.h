@@ -89,7 +89,7 @@ namespace hdi{
         ++_histogram[_num_buckets-1];
         return;
       }
-      int id = (v-_min)/(_max-_min)*num_buckets();
+      int id = static_cast<int>((v-_min)/(_max-_min)*num_buckets());
       ++_histogram[id];
     }
 

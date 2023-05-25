@@ -35,6 +35,7 @@
 #include <map>
 #include <unordered_map>
 #include "hdi/data/map_mem_eff.h"
+#include "hdi/data/sparse_mat.h"
 
 namespace hdi{
   namespace dr{
@@ -44,5 +45,7 @@ namespace hdi{
     template class SparseTSNEUserDefProbabilities<double,std::vector<std::unordered_map<uint32_t,double>>>;
     template class SparseTSNEUserDefProbabilities<float,std::vector<hdi::data::MapMemEff<uint32_t,float>>>;
     template class SparseTSNEUserDefProbabilities<double,std::vector<hdi::data::MapMemEff<uint32_t,double>>>;
+    template class SparseTSNEUserDefProbabilities<float,std::vector<hdi::data::SparseVec<uint32_t,float>>>;
+    //template class SparseTSNEUserDefProbabilities<double,std::vector<hdi::data::SparseVec<uint32_t,double>>>;
   }
 }

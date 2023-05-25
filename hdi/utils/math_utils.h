@@ -40,6 +40,8 @@
 #include <cmath>
 #include <math.h> 
 #include <iostream>
+#include <type_traits>
+#include "hdi/data/sparse_mat.h"
 
 namespace hdi{
   namespace utils{
@@ -130,23 +132,43 @@ namespace hdi{
         if(a[i] == 0){
           continue;
         }
-        for(auto& v: b[i]){
-          c[v.first]  += static_cast<typename vector_type::value_type>(v.second * a[i]);
+        if constexpr (std::is_same_v<sparse_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (Eigen::SparseVector<float>::InnerIterator it(b[i].memory()); it; ++it) {
+            c[it.index()] += static_cast<typename vector_type::value_type>(it.value() * a[i]);
+          }
         }
+        else // MapMemEff
+        {
+          for (auto& v : b[i]) {
+            c[v.first] += static_cast<typename vector_type::value_type>(v.second * a[i]);
+          }
+        }
+
       }
     }
 
     template <typename sparse_matrix_type, typename vector_type>
     void computeStationaryDistribution(const sparse_matrix_type& fmc, vector_type* distribution, uint32_t iterations, typename vector_type::value_type eps){
-      const unsigned int n = fmc.size();
+      const auto n = fmc.size();
       assert(fmc.size() == distribution->size());
 
 
       for(int i = 0; i < n; ++i){
         double sum = 0;
-        for(auto p: fmc[i]){
-          sum += p.second;
+        if constexpr (std::is_same_v<sparse_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (Eigen::SparseVector<float>::InnerIterator it(fmc[i].memory()); it; ++it) {
+            sum += it.value();
+          }
         }
+        else // MapMemEff
+        {
+          for (auto p : fmc[i]) {
+            sum += p.second;
+          }
+        }
+
         if(std::abs(sum-1) > 0.001)
           std::cout << "fmc test(" << i << "): " << sum <<std::endl;
       }

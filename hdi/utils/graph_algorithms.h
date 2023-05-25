@@ -34,6 +34,7 @@
 #define GRAPH_ALGORITHMS_H
 
 #include <vector>
+#include "hdi/data/sparse_mat.h"
 
 namespace hdi{
   namespace utils{

@@ -37,6 +37,7 @@
 #include <omp.h>
 #endif
 #include "hdi/dimensionality_reduction/hierarchical_sne.h"
+#include "hdi/dimensionality_reduction/knn_utils.h"
 #include "hdi/utils/math_utils.h"
 #include "hdi/utils/log_helper_functions.h"
 #include "hdi/utils/scoped_timers.h"
@@ -45,41 +46,14 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <numeric>
+#include <type_traits>
 #include "hdi/utils/memory_utils.h"
 #include "hdi/data/map_mem_eff.h"
+#include "hdi/data/sparse_mat.h"
 #include "hdi/data/map_helpers.h"
 #include "hdi/data/io.h"
 #include "hdi/utils/log_progress.h"
 
-#ifdef HNSWLIB_FOUND
-#ifdef _MSC_VER
-#if(_MSC_VER >= 1900)
-#include "hnswlib/hnswlib.h"
-#include "hnswlib/space_l2.h"
-#define HNSWLIB_SUPPORTED
-#endif //(_MSC_VER >= 1900)
-#else // _MSC_VER
-#if (__cplusplus >=201103)
-#include "hnswlib/hnswlib.h"
-#include "hnswlib/space_l2.h"
-#define HNSWLIB_SUPPORTED
-#endif //(__cplusplus >=201103)
-#endif // _MSC_VER
-#endif //HNSWLIB_FOUND
-
-#ifdef __USE_ANNOY__
-#ifndef WIN32
-#define isnan std::isnan
-#endif
-#pragma warning( push )
-#pragma warning( disable : 4477 )
-#include "annoylib.h"
-#pragma warning( pop )
-#include "kissrandom.h"
-#ifndef WIN32
-#undef isnan
-#endif
-#endif // __USE_ANNOY__
 
 namespace hdi {
   namespace dr {
@@ -89,12 +63,11 @@ namespace hdi {
     HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::Parameters::Parameters() :
       _seed(-1),
       _num_neighbors(30),
-      _aknn_num_trees(4),
-      _aknn_num_checks(1024),
       _aknn_algorithm(hdi::dr::KNN_ANNOY),
       _aknn_metric(hdi::dr::KNN_METRIC_EUCLIDEAN),
-      _aknn_algorithmP1(16), // default parameter for HNSW
-      _aknn_algorithmP2(200), // default parameter for HNSW
+      _aknn_hnsw_M(16), // default parameter for HNSW
+      _aknn_hnsw_eff(200), // default parameter for HNSW
+      _aknn_annoy_num_trees(4),
       _monte_carlo_sampling(true),
       _mcmcs_num_walks(10),
       _mcmcs_landmark_thresh(1.5),
@@ -130,6 +103,7 @@ namespace hdi {
     void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::Statistics::reset() {
       _total_time = -1;
       _init_knn_time = -1;
+      _comp_knn_time = -1;
       _init_probabilities_time = -1;
       _init_fmc_time = -1;
       _mcmc_sampling_time = -1;
@@ -147,7 +121,8 @@ namespace hdi {
     void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::Statistics::log(utils::AbstractLog* logger)const {
       utils::secureLog(logger, "\n--------------- Hierarchical-SNE Statistics ------------------");
       utils::secureLogValue(logger, "Total time", _total_time);
-      if (_init_knn_time != -1) { utils::secureLogValue(logger, "\tAKNN graph computation time", _init_knn_time, true, 2); }
+      if (_init_knn_time != -1) { utils::secureLogValue(logger, "\tAKNN graph init time", _init_knn_time, true, 2); }
+      if (_comp_knn_time != -1) { utils::secureLogValue(logger, "\tAKNN graph computation time", _comp_knn_time, true, 2); }
       if (_init_probabilities_time != -1) { utils::secureLogValue(logger, "\tTransition probabilities computation time", _init_probabilities_time, true, 1); }
       if (_init_fmc_time != -1) { utils::secureLogValue(logger, "\tFMC computation time", _init_fmc_time, true, 3); }
       if (_mcmc_sampling_time != -1) { utils::secureLogValue(logger, "\tMarkov Chain Monte Carlo sampling time", _mcmc_sampling_time, true, 1); }
@@ -267,198 +242,43 @@ namespace hdi {
     }
 
     template <typename scalar_type, typename sparse_scalar_matrix_type>
-    void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::computeNeighborhoodGraph(scalar_vector_type& distance_based_probabilities, std::vector<int>& neighborhood_graph) {
+    void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::computeFMC(scalar_vector_type& distance_based_probabilities, std::vector<int>& neighborhood_graph) {
 
-      unsigned_int_type nn = _params._num_neighbors + 1;
-      scalar_type perplexity = _params._num_neighbors / 3.;
-      neighborhood_graph.resize(_num_dps*nn);
-      distance_based_probabilities.resize(_num_dps*nn);
-        
-      // Fallback to ANNOY if others are not supported
-      #ifndef HNSWLIB_SUPPORTED
-        if (_params._aknn_algorithm == hdi::dr::KNN_HNSW)
-        {
-            hdi::utils::secureLog(_logger, "HNSW not available, falling back to ANNOY");
-            _params._aknn_algorithm = hdi::dr::KNN_ANNOY;
-        }
-      #endif // HNSWLIB_SUPPORTED
-                
-      #ifndef __USE_ANNOY__
-        if (_params._aknn_algorithm == hdi::dr::KNN_ANNOY)
-        {
-            _params._aknn_algorithm = hdi::dr::KNN_HNSW;
-        }
-      #endif // __USE_ANNOY__
+      utils::secureLog(_logger, "\tFMC computation...");
+      utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_probabilities_time);
 
-      if (_params._aknn_algorithm == hdi::dr::KNN_HNSW)
-      {
-#ifdef HNSWLIB_SUPPORTED
-        utils::secureLog(_logger, "Computing the neighborhood graph with HNSW Lib...");
-
-        hnswlib::SpaceInterface<float> *space = NULL;
-        switch (_params._aknn_metric) {
-        case hdi::dr::KNN_METRIC_EUCLIDEAN:
-          space = new hnswlib::L2Space(_dimensionality);
-          break;
-        case hdi::dr::KNN_METRIC_INNER_PRODUCT:
-          space = new hnswlib::InnerProductSpace(_dimensionality);
-          break;
-        default:
-          space = new hnswlib::L2Space(_dimensionality);
-          break;
-        }
-        hnswlib::HierarchicalNSW<scalar_type> appr_alg(space, _num_dps, _params._aknn_algorithmP1, _params._aknn_algorithmP2, 0);
-
-        utils::secureLog(_logger, "\tBuilding the trees...");
-        utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
-        appr_alg.addPoint((void*)_high_dimensional_data, (std::size_t) 0);
-        unsigned num_threads = std::thread::hardware_concurrency();
-        hnswlib::ParallelFor(1, _num_dps, num_threads, [&](size_t i, size_t threadId) {
-          appr_alg.addPoint((void*)(_high_dimensional_data + (i * _dimensionality)), (hnswlib::labeltype) i);
-          });
-        utils::secureLog(_logger, "\tAKNN queries...");
-        //	#pragma  omp parallel for
-        for (int i = 0; i < _num_dps; ++i)
-        {
-          auto top_candidates = appr_alg.searchKnn(_high_dimensional_data + (i*_dimensionality), (hnswlib::labeltype)nn);
-
-          scalar_type *distances = distance_based_probabilities.data() + (i*nn);
-          int *indices = neighborhood_graph.data() + (i*nn);
-          int j = 0;
-          assert(top_candidates.size() == nn);
-          while (top_candidates.size() > 0)
-          {
-            auto rez = top_candidates.top();
-            distances[nn - j - 1] = rez.first;
-            indices[nn - j - 1] = rez.second;
-            top_candidates.pop();
-            ++j;
-          }
-        }
-#endif // HNSWLIB_SUPPORTED
-      }
-      else if (_params._aknn_algorithm == hdi::dr::KNN_ANNOY)
-      {
-#ifdef __USE_ANNOY__
-        hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy...");
-
-        int search_k = nn * _params._aknn_num_trees;
-
-        Annoy::AnnoyIndexInterface<int32_t, double>* tree = NULL;
-        switch (_params._aknn_metric) {
-        case hdi::dr::KNN_METRIC_EUCLIDEAN:
-          hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          tree = new Annoy::AnnoyIndex<int32_t, double, Annoy::Euclidean, Annoy::Kiss64Random, Annoy::AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
-          break;
-        case hdi::dr::KNN_METRIC_COSINE:
-          hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Cosine distances ...");
-          tree = new Annoy::AnnoyIndex<int32_t, double, Annoy::Angular, Annoy::Kiss64Random, Annoy::AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
-          break;
-        case hdi::dr::KNN_METRIC_MANHATTAN:
-          hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Manhattan distances ...");
-          tree = new Annoy::AnnoyIndex<int32_t, double, Annoy::Manhattan, Annoy::Kiss64Random, Annoy::AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
-          break;
-          //case hdi::dr::KNN_METRIC_HAMMING:
-          //  hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          //  tree = new Annoy::AnnoyIndex<int, double, Annoy::Hamming, Annoy::Kiss32Random>(num_dim);
-          //  break;
-        case hdi::dr::KNN_METRIC_DOT:
-          hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Dot product distances ...");
-          tree = new Annoy::AnnoyIndex<int32_t, double, Annoy::DotProduct, Annoy::Kiss64Random, Annoy::AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
-          break;
-        default:
-          hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          tree = new Annoy::AnnoyIndex<int32_t, double, Annoy::Euclidean, Annoy::Kiss64Random, Annoy::AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
-          break;
-        }
-
-        {
-          utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
-
-          for (int i = 0; i < _num_dps; ++i) {
-            double* vec = new double[_dimensionality];
-            for (int z = 0; z < _dimensionality; ++z) {
-              vec[z] = _high_dimensional_data[i * _dimensionality + z];
-            }
-            tree->add_item(i, vec);
-          }
-          tree->build(_params._aknn_num_trees);
-
-          // Sample check if it returns enough neighbors
-          std::vector<int> closest;
-          std::vector<double> closest_distances;
-          for (int n = 0; n < 100; n++) {
-            tree->get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
-            unsigned int neighbors_count = closest.size();
-            if (neighbors_count < nn) {
-              printf("Requesting %d neighbors, but ANNOY returned only %u. Please increase search_k\n", nn, neighbors_count);
-              return;
-            }
-          }
-
-          hdi::utils::secureLog(_logger, "Done building tree. Beginning nearest neighbor search... ");
-
+      const unsigned_int_type nn = _params._num_neighbors + 1;
+      const scalar_type perplexity = _params._num_neighbors / 3.;
 
 #pragma omp parallel for
-          for (int n = 0; n < _num_dps; n++)
-          {
-            // Find nearest neighbors
-            std::vector<int> closest;
-            std::vector<double> closest_distances;
-            tree->get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
-
-            // Copy current row
-            for (unsigned int m = 0; m < nn; m++) {
-              neighborhood_graph[n * nn + m] = closest[m];
-              distance_based_probabilities[n * nn + m] = closest_distances[m] * closest_distances[m];
-            }
+      for (int_type d = 0; d < _num_dps; ++d) {
+        //It could be that the point itself is not the nearest one if two points are identical... I want the point itself to be the first one!
+        if (neighborhood_graph[d * nn] != d) {
+          unsigned_int_type to_swap = d * nn;
+          for (; to_swap < d * nn + (nn - 1); ++to_swap) {
+            if (neighborhood_graph[to_swap] == d)
+              break;
           }
+          std::swap(neighborhood_graph[nn * d], neighborhood_graph[to_swap]);
+          std::swap(distance_based_probabilities[nn * d], distance_based_probabilities[to_swap]);
         }
-        delete tree;
-#endif // __USE_ANNOY__
+        scalar_vector_type temp_probability(nn, 0);
+        utils::computeGaussianDistributionWithFixedPerplexity<scalar_vector_type>(
+          distance_based_probabilities.cbegin() + d * nn,
+          distance_based_probabilities.cbegin() + (d + 1) * nn,
+          temp_probability.begin(),
+          temp_probability.begin() + nn,
+          perplexity,
+          200,
+          1e-5,
+          0
+        );
+        distance_based_probabilities[d * nn] = 0;
+        for (unsigned_int_type n = 1; n < nn; ++n) {
+          distance_based_probabilities[d * nn + n] = temp_probability[n];
+        }
       }
 
-      {
-        utils::secureLog(_logger, "\tFMC computation...");
-        utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_probabilities_time);
-        
-        //#ifdef __USE_GCD__
-        //        std::cout << "GCD dispatch, hierarchical_sne_inl 253.\n";
-        //        dispatch_apply(_num_dps, dispatch_get_global_queue(0, 0), ^(size_t d) {
-        //#else
-#pragma omp parallel for
-        for (int_type d = 0; d < _num_dps; ++d) {
-          //#endif //__USE_GCD__
-                    //It could be that the point itself is not the nearest one if two points are identical... I want the point itself to be the first one!
-          if (neighborhood_graph[d*nn] != d) {
-            unsigned_int_type to_swap = d * nn;
-            for (; to_swap < d*nn + (nn-1); ++to_swap) {
-              if (neighborhood_graph[to_swap] == d)
-                break;
-            }
-            std::swap(neighborhood_graph[nn*d], neighborhood_graph[to_swap]);
-            std::swap(distance_based_probabilities[nn*d], distance_based_probabilities[to_swap]);
-          }
-          scalar_vector_type temp_probability(nn, 0);
-          utils::computeGaussianDistributionWithFixedPerplexity<scalar_vector_type>(
-            distance_based_probabilities.cbegin() + d * nn,
-            distance_based_probabilities.cbegin() + (d + 1)*nn,
-            temp_probability.begin(),
-            temp_probability.begin() + nn,
-            perplexity,
-            200,
-            1e-5,
-            0
-            );
-          distance_based_probabilities[d*nn] = 0;
-          for (unsigned_int_type n = 1; n < nn; ++n) {
-            distance_based_probabilities[d*nn + n] = temp_probability[n];
-          }
-        }
-        //#ifdef __USE_GCD__
-        //        );
-        //#endif
-      }
     }
 
     template <typename scalar_type, typename sparse_scalar_matrix_type>
@@ -472,9 +292,12 @@ namespace hdi {
       scalar_vector_type distance_based_probabilities;
       std::vector<int> neighborhood_graph;
 
-      computeNeighborhoodGraph(distance_based_probabilities, neighborhood_graph);
       unsigned_int_type nn = _params._num_neighbors + 1;
 
+      knn_params ann_params{ _params._aknn_algorithm, _params._aknn_metric, nn, _params._aknn_hnsw_M, _params._aknn_hnsw_eff, _params._aknn_annoy_num_trees };
+      computeHighDimensionalDistances<scalar_type, int, HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::Statistics>(_high_dimensional_data, _dimensionality, _num_dps, ann_params, distance_based_probabilities, neighborhood_graph, &_statistics, _logger);
+      computeFMC(distance_based_probabilities, neighborhood_graph);
+      
       {
         utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_fmc_time);
         utils::secureLog(_logger, "Creating transition matrix...");
@@ -492,6 +315,10 @@ namespace hdi {
         for (int i = 0; i < _num_dps; ++i) {
           //#endif //__USE_GCD__
           scalar_type sum = 0;
+
+          if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+            scale._transition_matrix[i].resize(_num_dps);
+
           for (int n = 1; n < nn; ++n) {
             int idx = i * nn + n;
             auto v = distance_based_probabilities[idx];
@@ -534,7 +361,7 @@ namespace hdi {
       utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._landmarks_selection_time);
       utils::secureLog(_logger, "Landmark selection with fixed reduction...");
       const unsigned_int_type previous_scale_dp = previous_scale._transition_matrix.size();
-      const unsigned_int_type num_landmarks = previous_scale_dp * _params._rs_reduction_factor_per_layer;
+      const unsigned_int_type num_landmarks = static_cast<unsigned_int_type>(previous_scale_dp * _params._rs_reduction_factor_per_layer);
 
       std::default_random_engine generator(seed());
       std::uniform_int_distribution<> distribution_int(0, previous_scale_dp - 1);
@@ -546,6 +373,15 @@ namespace hdi {
       scale._previous_scale_to_landmark_idx.resize(previous_scale_dp, -1);
       scale._transition_matrix.resize(num_landmarks);
       scale._area_of_influence.resize(previous_scale_dp);
+
+      if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+      {
+        for (int i = 0; i < num_landmarks; ++i)
+          scale._transition_matrix[i].resize(num_landmarks);
+
+        for (int i = 0; i < previous_scale_dp; ++i)
+          scale._area_of_influence[i].resize(num_landmarks);
+      }
 
       int num_tries = 0;
       selected_landmarks = 0;
@@ -569,15 +405,15 @@ namespace hdi {
 
         ++selected_landmarks;
       }
-      _statistics._landmarks_selection_num_walks = num_tries * _params._rs_outliers_removal_jumps;
+      _statistics._landmarks_selection_num_walks = static_cast<scalar_type>(num_tries * _params._rs_outliers_removal_jumps);
     }
 
     template <typename scalar_type, typename sparse_scalar_matrix_type>
     void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::selectLandmarksWithStationaryDistribution(const Scale& previous_scale, Scale& scale, unsigned_int_type& selected_landmarks) {
       utils::secureLog(_logger, "Landmark selection...");
       const unsigned_int_type previous_scale_dp = previous_scale._transition_matrix.size();
-      int count = 0;
-      int thresh = _params._mcmcs_num_walks * _params._mcmcs_landmark_thresh;
+      unsigned_int_type count = 0;
+      unsigned_int_type thresh = static_cast<unsigned_int_type>(_params._mcmcs_num_walks * _params._mcmcs_landmark_thresh);
       //__block std::vector<unsigned_int_type> importance_sampling(previous_scale_dp,0);
       std::vector<unsigned_int_type> importance_sampling(previous_scale_dp, 0);
 
@@ -617,11 +453,11 @@ namespace hdi {
         {
           std::vector<unsigned_int_type> importance_sampling_sort = importance_sampling;
           std::sort(importance_sampling_sort.begin(), importance_sampling_sort.end());
-          unsigned_int_type cutoff = importance_sampling_sort[(importance_sampling_sort.size() - 1) * (1.0f - _params._hard_cut_off_percentage)];
+          unsigned_int_type cutoff = importance_sampling_sort[static_cast<size_t>((importance_sampling_sort.size() - 1) * (1.0f - _params._hard_cut_off_percentage))];
           thresh = cutoff;
         }
 
-        _statistics._landmarks_selection_num_walks = previous_scale_dp * _params._mcmcs_num_walks;
+        _statistics._landmarks_selection_num_walks = static_cast<scalar_type>(previous_scale_dp * _params._mcmcs_num_walks);
 
         for (int i = 0; i < previous_scale_dp; ++i) {
           if (importance_sampling[i] > thresh)
@@ -640,6 +476,15 @@ namespace hdi {
         scale._landmark_weight.resize(count);
         scale._transition_matrix.resize(count);
         selected_landmarks = 0;
+
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (int i = 0; i < count; ++i)
+            scale._transition_matrix[i].resize(count);
+
+          for (int i = 0; i < previous_scale_dp; ++i)
+            scale._area_of_influence[i].resize(count);
+        }
 
         for (int i = 0; i < previous_scale_dp; ++i) {
           if (importance_sampling[i] > thresh) {
@@ -739,8 +584,8 @@ namespace hdi {
           //#ifdef __USE_GCD__
           //          );
           //#endif
-          _statistics._aoi_num_walks = previous_scale_dp * walks_per_dp;
-          _statistics._aoi_sparsity = 1 - scalar_type(num_elem_in_Is) / (previous_scale_dp*selected_landmarks);
+          _statistics._aoi_num_walks = static_cast<scalar_type>(previous_scale_dp * walks_per_dp);
+          _statistics._aoi_sparsity = static_cast<scalar_type>(1) - static_cast<scalar_type>(num_elem_in_Is) / (previous_scale_dp*selected_landmarks);
         }
 
         {
@@ -751,15 +596,38 @@ namespace hdi {
           for (int l = 0; l < scale._transition_matrix.size(); ++l) {
             num_elem_in_Ts += scale._transition_matrix[l].size();
             scalar_type sum(0);
-            for (auto& e : scale._transition_matrix[l]) {
-              sum += e.second;
-            }
-            for (auto& e : scale._transition_matrix[l]) {
-              e.second /= sum;
-              if (e.second > 0.01) {
-                ++num_effective_elem_in_Ts;
+            if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+            {
+              for (Eigen::SparseVector<float>::InnerIterator it(scale._transition_matrix[l].memory()); it; ++it) {
+                sum += it.value();
               }
             }
+            else // MapMemEff
+            {
+              for (auto& e : scale._transition_matrix[l]) {
+                sum += e.second;
+              }
+            }
+
+            if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+            {
+              for (Eigen::SparseVector<float>::InnerIterator it(scale._transition_matrix[l].memory()); it; ++it) {
+                it.valueRef() /= sum;
+                if (it.value() > 0.01) {
+                  ++num_effective_elem_in_Ts;
+                }
+              }
+            }
+            else // MapMemEff
+            {
+              for (auto& e : scale._transition_matrix[l]) {
+                e.second /= sum;
+                if (e.second > 0.01) {
+                  ++num_effective_elem_in_Ts;
+                }
+              }
+            }
+
           }
           _statistics._fmc_sparsity = 1 - scalar_type(num_elem_in_Ts) / (selected_landmarks*selected_landmarks);
           _statistics._fmc_effective_sparsity = 1 - scalar_type(num_effective_elem_in_Ts) / (selected_landmarks*selected_landmarks);
@@ -853,8 +721,17 @@ namespace hdi {
           //caching of the weights
           for (d = 0; d < previous_scale_dp; ++d) {
             num_elem_in_Is += scale._area_of_influence[d].size();
-            for (auto& e : scale._area_of_influence[d]) {
-              scale._landmark_weight[e.first] += e.second;
+            if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+            {
+              for (Eigen::SparseVector<float>::InnerIterator it(scale._area_of_influence[d].memory()); it; ++it) {
+                scale._landmark_weight[it.index()] += it.value();
+              }
+            }
+            else // MapMemEff
+            {
+              for (auto& e : scale._area_of_influence[d]) {
+                scale._landmark_weight[e.first] += e.second;
+              }
             }
           }
 
@@ -882,13 +759,29 @@ namespace hdi {
               //  #endif //__USE_GCD__
                             //ordered for efficient initialization
               std::map<typename sparse_scalar_matrix_type::value_type::key_type, typename sparse_scalar_matrix_type::value_type::mapped_type> temp_trans_mat; // use map here
-              for (const auto& d : inverse_aoi[l]) {
-                for (const auto& aoi : scale._area_of_influence[d.first]) {
-                  double single_landmark_thresh = (1. / 100.)*_params._transition_matrix_prune_thresh;
-                  if (l != aoi.first) {
-                    if (d.second <= single_landmark_thresh || aoi.second <= single_landmark_thresh)
-                      continue;
-                    temp_trans_mat[aoi.first] += d.second * aoi.second * previous_scale._landmark_weight[d.first];
+              if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+              {
+                for (Eigen::SparseVector<float>::InnerIterator it_d(inverse_aoi[l].memory()); it_d; ++it_d) {
+                  for (Eigen::SparseVector<float>::InnerIterator it_aoi(scale._area_of_influence[it_d.index()].memory()); it_aoi; ++it_aoi) {
+                    double single_landmark_thresh = (1. / 100.) * _params._transition_matrix_prune_thresh;
+                    if (l != it_aoi.index()) {
+                      if (it_d.value() <= single_landmark_thresh || it_aoi.value() <= single_landmark_thresh)
+                        continue;
+                      temp_trans_mat[it_aoi.index()] += it_d.value() * it_aoi.value() * previous_scale._landmark_weight[it_d.index()];
+                    }
+                  }
+                }
+              }
+              else // MapMemEff
+              {
+                for (const auto& d : inverse_aoi[l]) {
+                  for (const auto& aoi : scale._area_of_influence[d.first]) {
+                    double single_landmark_thresh = (1. / 100.) * _params._transition_matrix_prune_thresh;
+                    if (l != aoi.first) {
+                      if (d.second <= single_landmark_thresh || aoi.second <= single_landmark_thresh)
+                        continue;
+                      temp_trans_mat[aoi.first] += d.second * aoi.second * previous_scale._landmark_weight[d.first];
+                    }
                   }
                 }
               }
@@ -907,7 +800,7 @@ namespace hdi {
             //  #endif
             progress.finish();
           }
-          _statistics._aoi_num_walks = previous_scale_dp * walks_per_dp;
+          _statistics._aoi_num_walks = static_cast<scalar_type>(previous_scale_dp * walks_per_dp);
           _statistics._aoi_sparsity = 1 - scalar_type(num_elem_in_Is) / (previous_scale_dp*selected_landmarks);
         }
 
@@ -919,13 +812,28 @@ namespace hdi {
           for (int l = 0; l < scale._transition_matrix.size(); ++l) {
             num_elem_in_Ts += scale._transition_matrix[l].size();
             scalar_type sum(0);
-            for (auto& e : scale._transition_matrix[l]) {
-              sum += e.second;
+            if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+            {
+              for (Eigen::SparseVector<float>::InnerIterator it(scale._transition_matrix[l].memory()); it; ++it) {
+                sum += it.value();
+              }
+              for (Eigen::SparseVector<float>::InnerIterator it(scale._transition_matrix[l].memory()); it; ++it) {
+                it.valueRef() /= sum;
+                if (it.value() > 0.001) {
+                  ++num_effective_elem_in_Ts;
+                }
+              }
             }
-            for (auto& e : scale._transition_matrix[l]) {
-              e.second /= sum;
-              if (e.second > 0.001) {
-                ++num_effective_elem_in_Ts;
+            else // MapMemEff
+            {
+              for (auto& e : scale._transition_matrix[l]) {
+                sum += e.second;
+              }
+              for (auto& e : scale._transition_matrix[l]) {
+                e.second /= sum;
+                if (e.second > 0.001) {
+                  ++num_effective_elem_in_Ts;
+                }
               }
             }
           }
@@ -956,13 +864,24 @@ namespace hdi {
       for (int d = 0; d < _hierarchy[scale_id]._area_of_influence.size(); ++d) {
         double probability = 0;
         // ... check if any landmark index at this scale (s) affects it
-        for (auto& v : _hierarchy[scale_id]._area_of_influence[d]) {
-          // ... if so sum the probability
-          // Performs: https://doi.org/10.1111/cgf.12878 4.2 eqn 8 to calculate total influence F_i 
-          // on landmark L_{i}^{s-1} for selection group O (idxes) (follow link to visualize equation)
-          // https://latex.codecogs.com/png.image?F_i=\sum_{\mathcal{L}_{j}^{s}\in\mathcal{O}}I^S(i,j)
-          if (set_idxes.find(v.first) != not_found) {
-            probability += v.second;
+        // ... if so sum the probability
+        // Performs: https://doi.org/10.1111/cgf.12878 4.2 eqn 8 to calculate total influence F_i 
+        // on landmark L_{i}^{s-1} for selection group O (idxes) (follow link to visualize equation)
+        // https://latex.codecogs.com/png.image?F_i=\sum_{\mathcal{L}_{j}^{s}\in\mathcal{O}}I^S(i,j)
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (Eigen::SparseVector<float>::InnerIterator it(_hierarchy[scale_id]._area_of_influence[d].memory()); it; ++it) {
+            if (set_idxes.find(it.index()) != not_found) {
+              probability += it.value();
+            }
+          }
+        }
+        else // MapMemEff
+        {
+          for (auto& v : _hierarchy[scale_id]._area_of_influence[d]) {
+            if (set_idxes.find(v.first) != not_found) {
+              probability += v.second;
+            }
           }
         }
         // Record that s-1 landmark index is a neigbor of this idxes set
@@ -985,17 +904,33 @@ namespace hdi {
 
       for (int i = 0; i < idxes.size(); i++)
       {
-        for (auto& v : _hierarchy[next_scale_id]._area_of_influence[idxes[i]]) {
-
-          neighbors[v.first] += v.second;
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (Eigen::SparseVector<float>::InnerIterator it(_hierarchy[next_scale_id]._area_of_influence[idxes[i]].memory()); it; ++it) {
+            neighbors[it.index()] += it.value();
+          }
+        }
+        else // MapMemEff
+        {
+          for (auto& v : _hierarchy[next_scale_id]._area_of_influence[idxes[i]]) {
+            neighbors[v.first] += v.second;
+          }
         }
       }
 
       for (int i = 0; i < _hierarchy[next_scale_id]._area_of_influence.size(); i++)
       {
-        for (auto& v : _hierarchy[next_scale_id]._area_of_influence[i]) {
-
-          completeSet[v.first] += v.second;
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (Eigen::SparseVector<float>::InnerIterator it(_hierarchy[next_scale_id]._area_of_influence[i].memory()); it; ++it) {
+            completeSet[it.index()] += it.value();
+          }
+        }
+        else // MapMemEff
+        {
+          for (auto& v : _hierarchy[next_scale_id]._area_of_influence[i]) {
+            completeSet[v.first] += v.second;
+          }
         }
       }
 
@@ -1023,9 +958,20 @@ namespace hdi {
         influence[i] = _hierarchy[1]._area_of_influence[i];
         for (int s = 2; s <= scale; ++s) {
           typename sparse_scalar_matrix_type::value_type temp_link;
-          for (auto l : influence[i]) {
-            for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
-              temp_link[new_l.first] += l.second * new_l.second;
+          if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+          {
+            for (Eigen::SparseVector<float>::InnerIterator it_l(influence[i].memory()); it_l; ++it_l) {
+              for (Eigen::SparseVector<float>::InnerIterator it_new_l(_hierarchy[s]._area_of_influence[it_l.index()].memory()); it_new_l; ++it_new_l) {
+                temp_link[it_new_l.index()] += it_l.value() * it_new_l.value();
+              }
+            }
+          }
+          else // MapMemEff
+          {
+            for (auto l : influence[i]) {
+              for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
+                temp_link[new_l.first] += l.second * new_l.second;
+              }
             }
           }
           influence[i] = temp_link;
@@ -1035,6 +981,7 @@ namespace hdi {
       //      );
       //#endif
     }
+
     template <typename scalar_type, typename sparse_scalar_matrix_type>
     void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getInterpolationWeights(const std::vector<unsigned int>& data_points, sparse_scalar_matrix_type& influence, int scale)const {
       auto n = data_points.size();
@@ -1054,9 +1001,20 @@ namespace hdi {
         influence[i] = _hierarchy[1]._area_of_influence[data_points[i]];
         for (int s = 2; s <= scale; ++s) {
           typename sparse_scalar_matrix_type::value_type temp_link;
-          for (auto l : influence[i]) {
-            for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
-              temp_link[new_l.first] += l.second * new_l.second;
+          if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+          {
+            for (Eigen::SparseVector<float>::InnerIterator it_l(influence[i].memory()); it_l; ++it_l) {
+              for (Eigen::SparseVector<float>::InnerIterator it_new_l(_hierarchy[s]._area_of_influence[it_l.index()].memory()); it_new_l; ++it_new_l) {
+                temp_link[it_new_l.index()] += it_l.value() * it_new_l.value();
+              }
+            }
+          }
+          else // MapMemEff
+          {
+            for (auto l : influence[i]) {
+              for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
+                temp_link[new_l.first] += l.second * new_l.second;
+              }
             }
           }
           influence[i] = temp_link;
@@ -1076,9 +1034,19 @@ namespace hdi {
         return;
       }
 
-      for (auto& v : _hierarchy[1]._area_of_influence[dp]) {
-        influence[1][v.first] = v.second;
+      if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+      {
+        for (Eigen::SparseVector<float>::InnerIterator it(_hierarchy[1]._area_of_influence[dp].memory()); it; ++it) {
+          influence[1][it.index()] = it.value();
+        }
       }
+      else // MapMemEff
+      {
+        for (auto& v : _hierarchy[1]._area_of_influence[dp]) {
+          influence[1][v.first] = v.second;
+        }
+      }
+
       if (normalized)
       {
         double sum = 0;
@@ -1088,8 +1056,17 @@ namespace hdi {
       for (int s = 2; s < _hierarchy.size(); ++s) {
         for (auto l : influence[s - 1]) {
           if (l.second >= thresh) {
-            for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
-              influence[s][new_l.first] += l.second * new_l.second;
+            if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+            {
+              for (Eigen::SparseVector<float>::InnerIterator it(_hierarchy[s]._area_of_influence[l.first].memory()); it; ++it) {
+                influence[s][it.index()] += l.second * it.value();
+              }
+            }
+            else // MapMemEff
+            {
+              for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
+                influence[s][new_l.first] += l.second * new_l.second;
+              }
             }
           }
         }
@@ -1146,12 +1123,26 @@ namespace hdi {
       }
 
       scalar_type maxInfluence = 0;
-      for (auto& v : _hierarchy[1]._area_of_influence[dp]) {
-        influence[1][v.first] = v.second;
-        if (maxInfluence < v.second) {
-          maxInfluence = v.second;
-          scale_has_landmark[1] = true;
-          top_landmark_per_scale[1] = v.first;
+      if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+      {
+        for (Eigen::SparseVector<float>::InnerIterator it(_hierarchy[1]._area_of_influence[dp].memory()); it; ++it) {
+          influence[1][it.index()] = it.value();
+          if (maxInfluence < it.value()) {
+            maxInfluence = it.value();
+            scale_has_landmark[1] = true;
+            top_landmark_per_scale[1] = it.index();
+          }
+        }
+      }
+      else // MapMemEff
+      {
+        for (auto& v : _hierarchy[1]._area_of_influence[dp]) {
+          influence[1][v.first] = v.second;
+          if (maxInfluence < v.second) {
+            maxInfluence = v.second;
+            scale_has_landmark[1] = true;
+            top_landmark_per_scale[1] = v.first;
+          }
         }
       }
 
@@ -1165,12 +1156,26 @@ namespace hdi {
         for (auto l : influence[s - 1]) {
           maxInfluence = 0;
           if (l.second >= thresh) {
-            for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
-              influence[s][new_l.first] += l.second * new_l.second;
-              if (maxInfluence < influence[s][new_l.first]) {
-                maxInfluence = influence[s][new_l.first];
-                scale_has_landmark[s] = true;
-                top_landmark_per_scale[s] = new_l.first;
+            if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+            {
+              for (Eigen::SparseVector<float>::InnerIterator it(_hierarchy[s]._area_of_influence[l.first].memory()); it; ++it) {
+                influence[s][it.index()] += l.second * it.value();
+                if (maxInfluence < influence[s][it.index()]) {
+                  maxInfluence = influence[s][it.index()];
+                  scale_has_landmark[s] = true;
+                  top_landmark_per_scale[s] = it.index();
+                }
+              }
+            }
+            else // MapMemEff
+            {
+              for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
+                influence[s][new_l.first] += l.second * new_l.second;
+                if (maxInfluence < influence[s][new_l.first]) {
+                  maxInfluence = influence[s][new_l.first];
+                  scale_has_landmark[s] = true;
+                  top_landmark_per_scale[s] = new_l.first;
+                }
               }
             }
           }
@@ -1209,7 +1214,7 @@ namespace hdi {
 
 #pragma omp parallel for
       for (int dp = 0; dp < num_datapoints; dp++) {
-        float inf_thresh = 0.01;
+        float inf_thresh = 0.01f;
         std::vector<unsigned_int_type> top_landmark_per_scale;
         std::vector<bool> scale_has_landmark;
         getTopLandmarksInfluencingDataPoint(dp, top_landmark_per_scale, scale_has_landmark, inf_thresh, false);
@@ -1227,7 +1232,7 @@ namespace hdi {
           }
           if (redo > 0) {
             //if(thresh < 0.0005) std::cout << "Couldn't find landmark for point " << i << " at scale " << redo << " num possible landmarks " << influence[redo].size() << "\nSetting new threshold to " << thresh * 0.1 << std::endl;
-            inf_thresh *= 0.1;
+            inf_thresh *= 0.1f;
             getTopLandmarksInfluencingDataPoint(dp, top_landmark_per_scale, scale_has_landmark, inf_thresh, false);
           }
         }
@@ -1261,9 +1266,20 @@ namespace hdi {
 
         for (int s = orig_scale + 2; s <= dest_scale; ++s) {
           typename sparse_scalar_matrix_type::value_type temp_link;
-          for (auto l : closeness[i]) {
-            for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
-              temp_link[new_l.first] += l.second * new_l.second;
+          if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+          {
+            for (Eigen::SparseVector<float>::InnerIterator it_l(closeness[i].memory()); it_l; ++it_l) {
+              for (Eigen::SparseVector<float>::InnerIterator it_new_l(_hierarchy[s]._area_of_influence[it_l.index()].memory()); it_new_l; ++it_new_l) {
+                temp_link[it_new_l.index()] += it_l.value() * it_new_l.value();
+              }
+            }
+          }
+          else // MapMemEff
+          {
+            for (auto l : closeness[i]) {
+              for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
+                temp_link[new_l.first] += l.second * new_l.second;
+              }
             }
           }
           closeness[i] = temp_link;
@@ -1303,7 +1319,19 @@ namespace hdi {
 		  for (int i = 0; i < scale(0).size(); ++i) {
 			  const auto& scale_1_aois = scale(1)._area_of_influence[i];
 			  // Declare a holder for the super scale landmarks aois, using std::vector for quick look-up 
-			  std::vector<std::pair<key_type, mapped_type>> super_aois(scale_1_aois.begin(), scale_1_aois.end());
+        std::vector<std::pair<key_type, mapped_type>> super_aois;
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (Eigen::SparseVector<float>::InnerIterator it(scale_1_aois.memory()); it; ++it)
+          {
+            super_aois.push_back({ it.index(), it.value() });
+          }
+        }
+        else // MapMemEff
+        {
+          super_aois.assign(scale_1_aois.begin(), scale_1_aois.end());
+        }
+
 			  // Walk the scale hierarchy from super-scale to sub-scale
 			  // For each scale compute the cumulative influence 
 			  // of the landmark points from the lower scale on data point "i" at the current scale.
@@ -1313,10 +1341,20 @@ namespace hdi {
 				  std::unordered_map<key_type, mapped_type> current_aoi_cumulative;
 				  // Factor in the influence of all the super scale landmark aois
 				  for (auto super_aoi : super_aois) {
-					  for (auto current_aoi : scale(s)._area_of_influence[super_aoi.first]) {
-						  // compute cumulative aoi sum of products 
-						  current_aoi_cumulative[current_aoi.first] += super_aoi.second * current_aoi.second;
-					  }
+            if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+            {
+              for (Eigen::SparseVector<float>::InnerIterator it_current_aoi(scale(s)._area_of_influence[super_aoi.first].memory()); it_current_aoi; ++it_current_aoi) {
+                // compute cumulative aoi sum of products 
+                current_aoi_cumulative[it_current_aoi.index()] += super_aoi.second * it_current_aoi.value();
+              }
+            }
+            else // MapMemEff
+            {
+              for (auto current_aoi : scale(s)._area_of_influence[super_aoi.first]) {
+                // compute cumulative aoi sum of products 
+                current_aoi_cumulative[current_aoi.first] += super_aoi.second * current_aoi.second;
+              }
+            }
 				  }
 				  // Copy the influence of the current_aoi_cumulative to the super scale aoi holder for the next iteration
 				  super_aois.resize(current_aoi_cumulative.size());
@@ -1422,13 +1460,27 @@ namespace hdi {
         const double rnd_num = distribution(generator);
         unsigned_int_type idx_knn = dp_idx;
         double incremental_prob = 0;
-        for (auto& elem : transition_matrix[dp_idx]) {
-          incremental_prob += elem.second;
-          if (rnd_num < incremental_prob) {
-            idx_knn = elem.first;
-            break;
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (Eigen::SparseVector<float>::InnerIterator it(transition_matrix[dp_idx].memory()); it; ++it) {
+            incremental_prob += it.value();
+            if (rnd_num < incremental_prob) {
+              idx_knn = it.index();
+              break;
+            }
           }
         }
+        else // MapMemEff
+        {
+          for (auto& elem : transition_matrix[dp_idx]) {
+            incremental_prob += elem.second;
+            if (rnd_num < incremental_prob) {
+              idx_knn = elem.first;
+              break;
+            }
+          }
+        }
+
         //assert(idx_knn != dp_idx);
         if (idx_knn == dp_idx) {
           return std::numeric_limits<unsigned_int_type>::max();
@@ -1449,13 +1501,27 @@ namespace hdi {
         const double rnd_num = distribution(generator);
         unsigned_int_type idx_knn = dp_idx;
         double incremental_prob = 0;
-        for (auto& elem : transition_matrix[dp_idx]) {
-          incremental_prob += elem.second;
-          if (rnd_num < incremental_prob) {
-            idx_knn = elem.first;
-            break;
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (Eigen::SparseVector<float>::InnerIterator it(transition_matrix[dp_idx].memory()); it; ++it) {
+            incremental_prob += it.value();
+            if (rnd_num < incremental_prob) {
+              idx_knn = it.index();
+              break;
+            }
           }
         }
+        else // MapMemEff
+        {
+          for (auto& elem : transition_matrix[dp_idx]) {
+            incremental_prob += elem.second;
+            if (rnd_num < incremental_prob) {
+              idx_knn = elem.first;
+              break;
+            }
+          }
+        }
+
         //assert(idx_knn != dp_idx);
         if (idx_knn == dp_idx) {
           return -1;
@@ -1554,17 +1620,38 @@ namespace hdi {
       auto& scale = hsne.scale(scale_id + 1);
 
       for (auto e : _cluster_tree[scale_id][cluster_id_in_vector].landmarks()) {
-        for (auto aoi : scale._area_of_influence[e]) {
-          bool found = false;
-          for (int i = 0; i < influence.size(); ++i) {
-            auto it = _cluster_tree[scale_id + 1][i].landmarks().find(aoi.first);
-            if (it != _cluster_tree[scale_id + 1][i].landmarks().end()) {
-              influence[i] += aoi.second;
-              found = true;
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (Eigen::SparseVector<float>::InnerIterator it_aoi(scale._area_of_influence[e].memory()); it_aoi; ++it_aoi) {
+            bool found = false;
+            for (int i = 0; i < influence.size(); ++i) {
+              auto it = _cluster_tree[scale_id + 1][i].landmarks().find(it_aoi.index());
+              if (it != _cluster_tree[scale_id + 1][i].landmarks().end()) {
+                influence[i] += it_aoi.value();
+                found = true;
+              }
+            }
+            if (!found) {
+              unclustered_influence += it_aoi.value();
             }
           }
-          if (!found) {
-            unclustered_influence += aoi.second;
+        }
+        else // MapMemEff
+        {
+          for (auto e : _cluster_tree[scale_id][cluster_id_in_vector].landmarks()) {
+            for (auto aoi : scale._area_of_influence[e]) {
+              bool found = false;
+              for (int i = 0; i < influence.size(); ++i) {
+                auto it = _cluster_tree[scale_id + 1][i].landmarks().find(aoi.first);
+                if (it != _cluster_tree[scale_id + 1][i].landmarks().end()) {
+                  influence[i] += aoi.second;
+                  found = true;
+                }
+              }
+              if (!found) {
+                unclustered_influence += aoi.second;
+              }
+            }
           }
         }
       }
@@ -1608,12 +1695,12 @@ namespace hdi {
       std::vector<std::unordered_map<unsigned_int_type, scalar_type>> influence;
       hsne.getInfluenceOnDataPoint(pnt_id, influence);
 
-      res = std::tuple<unsigned_int_type, int_type, scalar_type>(_cluster_tree.size() - 1, -1, 1);
+      res = std::make_tuple(static_cast<unsigned_int_type>(_cluster_tree.size() - 1), static_cast<int_type>(-1), static_cast<scalar_type>(1));
       std::vector<unsigned_int_type> clusters_to_analyze(_cluster_tree[_cluster_tree.size() - 1].size());
       std::iota(clusters_to_analyze.begin(), clusters_to_analyze.end(), 0);
 
       //just for test
-      for (int s = _cluster_tree.size() - 1; s >= 0 && clusters_to_analyze.size(); --s) {
+      for (unsigned_int_type s = _cluster_tree.size() - 1; s >= 0 && clusters_to_analyze.size(); --s) {
         unsigned_int_type scale_id = s;
         std::vector<scalar_type> cluster_influence(clusters_to_analyze.size(), 0);
         scalar_type unclustered_influence(0);
@@ -1634,7 +1721,7 @@ namespace hdi {
 
         scalar_type max(unclustered_influence);
         int_type cluster_id(-1);
-        for (int i = 0; i < clusters_to_analyze.size(); ++i) {
+        for (size_t i = 0; i < clusters_to_analyze.size(); ++i) {
           if (cluster_influence[i] > max) {
             max = cluster_influence[i];
             cluster_id = _cluster_tree[scale_id][clusters_to_analyze[i]].id();
@@ -1649,7 +1736,7 @@ namespace hdi {
         //compute children nodes
         clusters_to_analyze.clear();
         if (s != 0) {
-          for (int i = 0; i < _cluster_tree[s - 1].size(); ++i) {
+          for (size_t i = 0; i < _cluster_tree[s - 1].size(); ++i) {
             if (_cluster_tree[s - 1][i].parent_id() == cluster_id) {
               clusters_to_analyze.push_back(i);
             }
@@ -1765,13 +1852,13 @@ namespace hdi {
           data::IO::loadSparseMatrix(scale._transition_matrix, stream, log);
 
           utils::secureLog(log, "\t... (init) landmarks to original data ...");
-          scale._landmark_to_original_data_idx.resize(n);
+          scale._landmark_to_original_data_idx.resize(static_cast<size_t>(n));
           std::iota(scale._landmark_to_original_data_idx.begin(), scale._landmark_to_original_data_idx.end(), 0);
           utils::secureLog(log, "\t... (init) landmarks to previous scale ...");
-          scale._landmark_to_previous_scale_idx.resize(n);
+          scale._landmark_to_previous_scale_idx.resize(static_cast<size_t>(n));
           std::iota(scale._landmark_to_previous_scale_idx.begin(), scale._landmark_to_previous_scale_idx.end(), 0);
           utils::secureLog(log, "\t... (init) landmark weights ...");
-          scale._landmark_weight.resize(n, 1);
+          scale._landmark_weight.resize(static_cast<size_t>(n), 1);
 
 
 

@@ -34,10 +34,11 @@
 #define EMBEDDING_INL
 
 #include "hdi/data/embedding.h"
+#include "hdi/data/sparse_mat.h"
+#include "hdi/utils/assert_by_exception.h"
 #include <algorithm>
 #include <limits>
-#include <algorithm>
-#include "hdi/utils/assert_by_exception.h"
+#include <type_traits>
 
 namespace hdi{
   namespace data{
@@ -185,15 +186,31 @@ namespace hdi{
 
       for(int i = 0; i < output.numDataPoints(); ++i){
         double total_weight = 0;
-        for(auto& w_elem: weights[i]){
-          double w = w_elem.second;
-          unsigned int idx = w_elem.first;
-          assert(idx < input.numDataPoints());
-          for(int d = 0; d < num_dim; ++d){
-            output.dataAt(i,d) += input.dataAt(idx,d) * w;
+        if constexpr (std::is_same_v<sparse_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        {
+          for (Eigen::SparseVector<float>::InnerIterator it(weights[i].memory()); it; ++it) {
+            double w = it.value();
+            unsigned int idx = it.index();
+            assert(idx < input.numDataPoints());
+            for (int d = 0; d < num_dim; ++d) {
+              output.dataAt(i, d) += input.dataAt(idx, d) * w;
+            }
+            total_weight += w;
           }
-          total_weight += w;
         }
+        else // MapMemEff
+        {
+          for (auto& w_elem : weights[i]) {
+            double w = w_elem.second;
+            unsigned int idx = w_elem.first;
+            assert(idx < input.numDataPoints());
+            for (int d = 0; d < num_dim; ++d) {
+              output.dataAt(i, d) += input.dataAt(idx, d) * w;
+            }
+            total_weight += w;
+          }
+        }
+
         for(int d = 0; d < num_dim; ++d){
           output.dataAt(i,d) = output.dataAt(i,d) / total_weight;
         }
