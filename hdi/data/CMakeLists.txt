@@ -33,16 +33,18 @@ if(INSTALL_HDILibSlim)
 		COMPONENT hdidata
 	)
 
-	# install Debug info files ("*.pdb") on windows
-	install(FILES "$<TARGET_FILE_DIR:${PROJECT_DATA}>/${PROJECT_DATA}.pdb" 
-		DESTINATION lib/$<CONFIGURATION> 
-		OPTIONAL
-	)
-
 	install(EXPORT ${PROJECT_DATA}Targets
 			FILE ${PROJECT_DATA}Targets.cmake
 			NAMESPACE HDISlim::
 			DESTINATION lib/cmake/HDILibSlim
 			COMPONENT HDIDATA_TARGET
 	)
+
+	if(MSVC)
+		# install Debug info files ("*.pdb") on windows
+		install(FILES "$<TARGET_FILE_DIR:${PROJECT_DATA}>/${PROJECT_DATA}.pdb" 
+			DESTINATION lib/$<CONFIGURATION> 
+			OPTIONAL
+		)
+	endif()
 endif()

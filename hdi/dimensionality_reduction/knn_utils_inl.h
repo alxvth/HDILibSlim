@@ -121,6 +121,7 @@ namespace hdi{
             }
           }
         }
+        delete space;
       }
       else // params.lib == hdi::dr::KNN_ANNOY
       {

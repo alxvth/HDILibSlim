@@ -5,8 +5,6 @@
 
 namespace hdi {
   namespace dr {
-    HierarchicalSNE testl;
-
     int HierarchicalSNE_NrOfKnnAlgorithms()
     {
       int numSupported = 1;
