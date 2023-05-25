@@ -35,12 +35,6 @@ if(INSTALL_HDILibSlim)
 		COMPONENT hdiutils
 	)
 
-	# install Debug info files ("*.pdb") on windows
-	install(FILES "$<TARGET_FILE_DIR:${PROJECT_UTILS}>/${PROJECT_UTILS}.pdb" 
-		DESTINATION lib/$<CONFIGURATION> 
-		OPTIONAL
-	)
-
 	# Preserve the header hierarchy by explicit install
 	# the CMake PUBLIC_HEADER target property flattens it if used.
 	install(CODE "foreach(HEADER ${HeaderFiles})
@@ -61,4 +55,13 @@ if(INSTALL_HDILibSlim)
 			DESTINATION lib/cmake/HDILibSlim
 			COMPONENT HDIUTILS_TARGET
 	)
+
+	if(MSVC)
+		# install Debug info files ("*.pdb") on windows
+		install(FILES "$<TARGET_FILE_DIR:${PROJECT_UTILS}>/${PROJECT_UTILS}.pdb" 
+			DESTINATION lib/$<CONFIGURATION> 
+			OPTIONAL
+		)
+	endif()
+
 endif()
