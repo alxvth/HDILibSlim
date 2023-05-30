@@ -1847,7 +1847,7 @@ namespace hdi {
 
           utils::secureLogValue(log, "Loading scale", 0);
           stream.read(reinterpret_cast<char*>(&n), sizeof(io_unsigned_int_type));
-          utils::secureLog(log, "\tsize", n);
+          utils::secureLogValue(log, "\tsize", n);
           utils::secureLog(log, "\t... transition matrix ...");
           data::IO::loadSparseMatrix(scale._transition_matrix, stream, log);
 
