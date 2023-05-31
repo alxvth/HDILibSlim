@@ -131,6 +131,11 @@ namespace hdi{
 
         //Now that I have the maps, I generate the new transition matrix
         new_transition_matrix.resize(map_non_selected_idxes.size() + map_selected_idxes.size());
+
+        // Resize Eigen sparse matrix
+        for (auto& row : new_transition_matrix)
+          row.resize(new_idxes.size());
+
         for (auto e : map_selected_idxes) {
           for (Eigen::SparseVector<float>::InnerIterator it(orig_transition_matrix[e.first].memory()); it; ++it) {
             if (map_selected_idxes.find(it.index()) != map_selected_idxes.end()) {
