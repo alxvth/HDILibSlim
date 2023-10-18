@@ -59,8 +59,8 @@ namespace hdi {
   namespace dr {
     /////////////////////////////////////////////////////////////////////////
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::Parameters::Parameters() :
+    template <typename scalar, typename sparse_scalar_matrix, typename integer>
+    HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::Parameters::Parameters() :
       _perplexity(30),
       _perplexity_multiplier(3),
       _aknn_algorithm(hdi::dr::KNN_ANNOY),
@@ -72,8 +72,8 @@ namespace hdi {
 
     /////////////////////////////////////////////////////////////////////////
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::Statistics::Statistics() :
+    template <typename scalar, typename sparse_scalar_matrix, typename integer>
+    HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::Statistics::Statistics() :
       _total_time(0),
       _trees_construction_time(0),
       _init_knn_time(0),
@@ -81,8 +81,8 @@ namespace hdi {
       _distribution_time(0)
     {}
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::Statistics::reset() {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::Statistics::reset() {
       _total_time = 0;
       _trees_construction_time = 0;
       _init_knn_time = 0;
@@ -90,8 +90,8 @@ namespace hdi {
       _distribution_time = 0;
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::Statistics::log(utils::AbstractLog* logger)const {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::Statistics::log(utils::AbstractLog* logger)const {
       utils::secureLog(logger, "\n-------- HD Joint Probability Generator Statistics -----------");
       utils::secureLogValue(logger, "Total time", _total_time);
       utils::secureLogValue(logger, "\tTrees construction time", _trees_construction_time, true, 1);
@@ -104,48 +104,48 @@ namespace hdi {
 
     /////////////////////////////////////////////////////////////////////////
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::HDJointProbabilityGenerator() :
+    template <typename scalar, typename sparse_scalar_matrix, typename integer>
+    HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::HDJointProbabilityGenerator() :
       _logger(nullptr)
     {
 
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::computeJointProbabilityDistribution(scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, sparse_scalar_matrix& distribution, Parameters params) {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::computeJointProbabilityDistribution(scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, sparse_scalar_matrix& distribution, Parameters params) {
       utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._total_time);
 
       hdi::utils::secureLog(_logger, "Computing the HD joint probability distribution...");
       distribution.resize(num_dps);
 
       std::vector<scalar_type>  distances_squared;
-      std::vector<int>      indices;
+      std::vector<integer>      indices;
 
       size_t nn = static_cast<size_t>(params._perplexity * params._perplexity_multiplier) + 1;
       knn_params ann_params{ params._aknn_algorithm, params._aknn_metric, nn, params._aknn_hnsw_M, params._aknn_hnsw_eff, params._aknn_annoy_num_trees };
-      computeHighDimensionalDistances<scalar_type, int, HDJointProbabilityGenerator<scalar_type, sparse_scalar_matrix>::Statistics>(high_dimensional_data, num_dim, num_dps, ann_params, distances_squared, indices, &_statistics, _logger);
+      computeHighDimensionalDistances<scalar_type, integer, HDJointProbabilityGenerator<scalar_type, sparse_scalar_matrix, integer>::Statistics>(high_dimensional_data, num_dim, num_dps, ann_params, distances_squared, indices, &_statistics, _logger);
       computeGaussianDistributions(distances_squared, indices, distribution, params);
       symmetrize(distribution);
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::computeProbabilityDistributions(scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, sparse_scalar_matrix& distribution, Parameters params) {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::computeProbabilityDistributions(scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, sparse_scalar_matrix& distribution, Parameters params) {
       utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._total_time);
 
       hdi::utils::secureLog(_logger, "Computing the HD joint probability distribution...");
       distribution.resize(num_dps);
 
       std::vector<scalar_type>  distances_squared;
-      std::vector<int>      indices;
+      std::vector<integer>      indices;
 
       size_t nn = static_cast<size_t>(params._perplexity * params._perplexity_multiplier) + 1;
       knn_params ann_params{ params._aknn_algorithm, params._aknn_metric, nn, params._aknn_hnsw_M, params._aknn_hnsw_eff, params._aknn_annoy_num_trees };
-      computeHighDimensionalDistances<scalar_type, int, HDJointProbabilityGenerator<scalar_type, sparse_scalar_matrix>::Statistics>(high_dimensional_data, num_dim, num_dps, ann_params, distances_squared, indices, &_statistics, _logger);
+      computeHighDimensionalDistances<scalar_type, integer, HDJointProbabilityGenerator<scalar_type, sparse_scalar_matrix, integer>::Statistics>(high_dimensional_data, num_dim, num_dps, ann_params, distances_squared, indices, &_statistics, _logger);
       computeGaussianDistributions(distances_squared, indices, distribution, params);
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::computeProbabilityDistributions(scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, std::vector<scalar_type>& probabilities, std::vector<int>& indices, Parameters params) {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::computeProbabilityDistributions(scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, std::vector<scalar_type>& probabilities, std::vector<integer>& indices, Parameters params) {
       utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._total_time);
 
       hdi::utils::secureLog(_logger, "Computing the HD joint probability distribution...");
@@ -154,13 +154,13 @@ namespace hdi {
 
       size_t nn = static_cast<unsigned int>(params._perplexity * params._perplexity_multiplier) + 1;
       knn_params ann_params{ params._aknn_algorithm, params._aknn_metric, nn, params._aknn_hnsw_M, params._aknn_hnsw_eff, params._aknn_annoy_num_trees };
-      computeHighDimensionalDistances<scalar_type, int, HDJointProbabilityGenerator<scalar_type, sparse_scalar_matrix>::Statistics>(high_dimensional_data, num_dim, num_dps, ann_params, distances_squared, indices, &_statistics, _logger);
+      computeHighDimensionalDistances<scalar_type, integer, HDJointProbabilityGenerator<scalar_type, sparse_scalar_matrix, integer>::Statistics>(high_dimensional_data, num_dim, num_dps, ann_params, distances_squared, indices, &_statistics, _logger);
       computeGaussianDistributions(distances_squared, indices, probabilities, params);
     }
 
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<int>& indices, int nn, sparse_scalar_matrix& distribution, Parameters& params) {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<integer>& indices, int nn, sparse_scalar_matrix& distribution, Parameters& params) {
       utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._distribution_time);
       utils::secureLog(_logger, "Computing joint-probability distribution...");
       const int n = distribution.size();
@@ -204,8 +204,8 @@ namespace hdi {
       }
       }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<int>& indices, sparse_scalar_matrix& distribution, Parameters& params) {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<integer>& indices, sparse_scalar_matrix& distribution, Parameters& params) {
       utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._distribution_time);
       utils::secureLog(_logger, "Computing joint-probability distribution...");
       const int n = distribution.size();
@@ -247,8 +247,8 @@ namespace hdi {
       }
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<int>& indices, std::vector<scalar_type>& probabilities, Parameters& params) {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<integer>& indices, std::vector<scalar_type>& probabilities, Parameters& params) {
       utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._distribution_time);
       utils::secureLog(_logger, "Computing joint-probability distribution...");
 
@@ -278,8 +278,8 @@ namespace hdi {
 #endif
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::symmetrize(sparse_scalar_matrix& distribution) {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::symmetrize(sparse_scalar_matrix& distribution) {
       const int n = distribution.size();
       for (int j = 0; j < n; ++j) {
         if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
@@ -303,8 +303,8 @@ namespace hdi {
       }
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::computeProbabilityDistributionsFromDistanceMatrix(const std::vector<scalar_type>& squared_distance_matrix, unsigned int num_dps, sparse_scalar_matrix& distribution, Parameters params) {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::computeProbabilityDistributionsFromDistanceMatrix(const std::vector<scalar_type>& squared_distance_matrix, unsigned int num_dps, sparse_scalar_matrix& distribution, Parameters params) {
       utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._distribution_time);
       utils::secureLog(_logger, "Computing joint-probability distribution...");
       const int n = num_dps;
