@@ -49,8 +49,6 @@
 namespace hdi {
   namespace dr {
 
-    int HierarchicalSNE_NrOfKnnAlgorithms();
-
     //! Hierarchical Stochastic Neighbor Embedding algorithm
     /*!
       Algorithm for the generation of a hierarchical representation of the data as presented in the Hierarchical Stochastic Neighbor Embedding paper
@@ -342,6 +340,8 @@ namespace hdi {
       inline unsigned_int_type randomWalk(unsigned_int_type starting_point, unsigned_int_type max_length, const sparse_scalar_matrix_type& transition_matrix, std::uniform_real_distribution<double>& distribution, std::default_random_engine& generator);
       //!Compute a random walk using a transition matrix that stops at a provided stopping point -> used for landmark similarity computation
       inline int randomWalk(unsigned_int_type starting_point, const std::vector<int>& stopping_points, unsigned_int_type max_length, const sparse_scalar_matrix_type& transition_matrix, std::uniform_real_distribution<double>& distribution, std::default_random_engine& generator);
+
+      void computeHighDimensionalDistances(const scalar_type* high_dimensional_data, size_t num_dim, size_t num_dps, knn_params params, std::vector<scalar_type>& distances_squared, std::vector<int>& neighborhood_indices);
 
     private:
       hierarchy_type _hierarchy;

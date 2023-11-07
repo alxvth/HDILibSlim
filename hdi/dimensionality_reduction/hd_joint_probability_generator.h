@@ -125,9 +125,11 @@ namespace hdi{
       //! Create joint distribution
       void symmetrize(sparse_scalar_matrix& matrix);
 
+      void computeHighDimensionalDistances(const scalar_type* high_dimensional_data, size_t num_dim, size_t num_dps, knn_params params, std::vector<scalar_type>& distances_squared, std::vector<integer_type>& neighborhood_indices);
+
     private:
       utils::AbstractLog* _logger;
-      Statistics      _statistics;
+      Statistics          _statistics;
 
     };
 

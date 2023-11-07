@@ -78,13 +78,13 @@ namespace hdi{
     };
 
     //! Returns both the name/label and index of the supported KNN libraries since this can depend on compiler support. 
-	//! This function is especially useful for building user-interfaces where the user can select which KNN library to use for a specific task (e.g. t-SNE or HSNE). 
-	//! Alternatively it can be used to offer a look-up table to translate the currently set KNN Library index back to human readable text.
+	  //! This function is especially useful for building user-interfaces where the user can select which KNN library to use for a specific task (e.g. t-SNE or HSNE). 
+	  //! Alternatively it can be used to offer a look-up table to translate the currently set KNN Library index back to human readable text.
     std::map<std::string, int> supported_knn_libraries();
 
     //! Returns the name/label and index of distance metrics supported by a specific KNN library.
-	//! This function is especially useful for building user-interfaces where the user can select both a KNN library and a distance metric since not every KNN library supports the same distance metric. 
-	//! Alternatively it can be used to offer a look-up table to translate the currently set KNN distance metric index back to human readable text.
+	  //! This function is especially useful for building user-interfaces where the user can select both a KNN library and a distance metric since not every KNN library supports the same distance metric. 
+	  //! Alternatively it can be used to offer a look-up table to translate the currently set KNN distance metric index back to human readable text.
     std::map<std::string, int> supported_knn_library_distance_metrics(int knn_lib);
 
     template <typename scalar_type, typename integer_type, typename stats_type>

@@ -108,7 +108,7 @@ namespace hdi{
             }
 
             scalar_type* distances = distances_squared.data() + (i * nn);
-            int* indices = neighborhood_indices.data() + (i * nn);
+            integer_type* indices = neighborhood_indices.data() + (i * nn);
             int j = 0;
             assert(top_candidates.size() == nn);
             while (top_candidates.size() > 0)
@@ -206,14 +206,8 @@ namespace hdi{
       }
 
     }
-    template void computeHighDimensionalDistances<float, int, HierarchicalSNE<float, std::vector<std::map<unsigned int, float>>>::Statistics>(const float*, size_t, size_t, knn_params, std::vector<float>&, std::vector<int>&, HierarchicalSNE<float, std::vector<std::map<unsigned int, float>>>::Statistics*, utils::AbstractLog*);
-    template void computeHighDimensionalDistances<float, int, HierarchicalSNE<float, std::vector<std::unordered_map<unsigned int, float>>>::Statistics>(const float*, size_t, size_t, knn_params, std::vector<float>&, std::vector<int>&, HierarchicalSNE<float, std::vector<std::unordered_map<unsigned int, float>>>::Statistics*, utils::AbstractLog*);
-    template void computeHighDimensionalDistances<float, int, HierarchicalSNE<float, std::vector<hdi::data::MapMemEff<unsigned int, float>>>::Statistics>(const float*, size_t, size_t, knn_params, std::vector<float>&, std::vector<int>&, HierarchicalSNE<float, std::vector<hdi::data::MapMemEff<unsigned int, float>>>::Statistics*, utils::AbstractLog*);
-    template void computeHighDimensionalDistances<float, int, HierarchicalSNE<float, std::vector<hdi::data::SparseVec<unsigned int, float>>>::Statistics>(const float*, size_t, size_t, knn_params, std::vector<float>&, std::vector<int>&, HierarchicalSNE<float, std::vector<hdi::data::SparseVec<unsigned int, float>>>::Statistics*, utils::AbstractLog*);
-    template void computeHighDimensionalDistances<float, int, HDJointProbabilityGenerator<float, std::vector<std::map<unsigned int, float>>>::Statistics>(const float*, size_t, size_t, knn_params, std::vector<float>&, std::vector<int>&, class HDJointProbabilityGenerator<float, std::vector<std::map<unsigned int, float>>>::Statistics*, utils::AbstractLog*);
-    template void computeHighDimensionalDistances<float, int, HDJointProbabilityGenerator<float, std::vector<std::unordered_map<unsigned int, float>>>::Statistics>(const float*, size_t, size_t, knn_params, std::vector<float>&, std::vector<int>&, class HDJointProbabilityGenerator<float, std::vector<std::unordered_map<unsigned int, float>>>::Statistics*, utils::AbstractLog*);
-    template void computeHighDimensionalDistances<float, int, HDJointProbabilityGenerator<float, std::vector<hdi::data::MapMemEff<unsigned int, float>>>::Statistics>(const float*, size_t, size_t, knn_params, std::vector<float>&, std::vector<int>&, class HDJointProbabilityGenerator<float, std::vector<hdi::data::MapMemEff<unsigned int, float>>>::Statistics*, utils::AbstractLog*);
-    template void computeHighDimensionalDistances<float, int, HDJointProbabilityGenerator<float, std::vector<hdi::data::SparseVec<unsigned int, float>>>::Statistics>(const float*, size_t, size_t, knn_params, std::vector<float>&, std::vector<int>&, class HDJointProbabilityGenerator<float, std::vector<hdi::data::SparseVec<unsigned int, float>>>::Statistics*, utils::AbstractLog*);
+
+
 }
 }
 

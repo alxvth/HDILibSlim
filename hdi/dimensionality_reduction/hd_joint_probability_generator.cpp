@@ -34,6 +34,7 @@
 
 namespace hdi{
   namespace dr{
+
     template class HDJointProbabilityGenerator<float, std::vector<std::map<uint32_t, float>>>;
     // template class HDJointProbabilityGenerator<double,std::vector<std::map<uint32_t,double>>>;
     template class HDJointProbabilityGenerator<float, std::vector<std::map<uint32_t, float>>, int64_t>;
@@ -53,5 +54,6 @@ namespace hdi{
     // template class HDJointProbabilityGenerator<double,std::vector<hdi::data::SparseVec<uint32_t,double>>>;
     template class HDJointProbabilityGenerator<float, std::vector<hdi::data::SparseVec<uint32_t, float>>, int64_t>;
     template class HDJointProbabilityGenerator<float, std::vector<hdi::data::SparseVec<uint32_t, float>>, uint64_t>;
+
   }
 }

@@ -1,8 +1,6 @@
 #include "knn_utils_inl.h"
 #include <stdexcept>
 
-#include "hierarchical_sne.h"
-
 namespace hdi {
   namespace dr {
 
@@ -41,6 +39,3 @@ namespace hdi {
 
   }
 }
-
-
-
