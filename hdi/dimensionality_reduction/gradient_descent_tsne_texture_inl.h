@@ -42,6 +42,10 @@
 #include <random>
 #include <type_traits>
 
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
+
 namespace hdi {
   namespace dr {
 
@@ -218,9 +222,9 @@ namespace hdi {
           _P[j].resize(n);
       }
 
-      for (int j = 0; j < n; ++j) {
-        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
-        {
+      if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+      {
+        for (int j = 0; j < n; ++j) {
           for (Eigen::SparseVector<float>::InnerIterator it(probabilities[j].memory()); it; ++it) {
             scalar_type v0 = it.value();
             scalar_type v1 = 0.;
@@ -231,20 +235,34 @@ namespace hdi {
             _P[it.index()][j] = static_cast<scalar_type>((v0 + v1) * 0.5);
           }
         }
-        else // MapMemEff
-        {
-          for (auto& elem : probabilities[j]) {
-            scalar_type v0 = elem.second;
-            auto iter = probabilities[elem.first].find(j);
-            scalar_type v1 = 0.;
-            if (iter != probabilities[elem.first].end())
-              v1 = iter->second;
-
-            _P[j][elem.first] = static_cast<scalar_type>((v0 + v1) * 0.5);
-            _P[elem.first][j] = static_cast<scalar_type>((v0 + v1) * 0.5);
-          }
-        }
       }
+      else // MapMemEff
+      {
+#pragma omp parallel
+        {
+          const int n = getNumberOfDataPoints();
+          int j = 0;
+          float tmp = 0;
+
+#pragma omp for
+        for (int j = 0; j < n; ++j) {
+          for (auto& elem : probabilities[j]) {
+              scalar_type v0 = elem.second;
+              auto iter = probabilities[elem.first].find(j);
+              scalar_type v1 = 0.;
+              if (iter != probabilities[elem.first].end())
+                v1 = iter->second;
+
+#pragma omp critical
+              {
+                _P[j][elem.first] = static_cast<scalar_type>((v0 + v1) * 0.5);
+                _P[elem.first][j] = static_cast<scalar_type>((v0 + v1) * 0.5);
+              }
+            }
+          }
+        } // parallel
+
+      } 
     }
     template void GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::computeHighDimensionalDistribution(const std::vector<hdi::data::SparseVec<uint32_t, float>>&);
     template void GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::computeHighDimensionalDistribution(const std::vector<hdi::data::MapMemEff<uint32_t, float>>&);
