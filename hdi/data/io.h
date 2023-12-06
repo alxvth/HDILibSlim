@@ -50,7 +50,7 @@ namespace hdi{
         //number of rows first
         io_unsigned_int_type num_rows = static_cast<io_unsigned_int_type>(matrix.size());
         stream.write(reinterpret_cast<char*>(&num_rows),sizeof(io_unsigned_int_type));
-        for(int j = 0; j < num_rows; ++j){
+        for(io_unsigned_int_type j = 0; j < num_rows; ++j){
           //number of elements in the current row
           io_unsigned_int_type num_elems = static_cast<io_unsigned_int_type>(matrix[j].size());
 
@@ -168,14 +168,14 @@ namespace hdi{
         if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
           matrix.resize(num_rows);
 
-        for(int j = 0; j < num_rows; ++j){
+        for(io_unsigned_int_type j = 0; j < num_rows; ++j){
           //number of elements in the current row
           io_unsigned_int_type num_elems(0);
           stream.read(reinterpret_cast<char*>(&num_elems),sizeof(io_unsigned_int_type));
           if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
             matrix[j].resize(num_rows);
 
-          for(int i = 0; i < num_elems; ++i){
+          for(io_unsigned_int_type i = 0; i < num_elems; ++i){
             io_unsigned_int_type id(0);
             io_scalar_type v(0);
             stream.read(reinterpret_cast<char*>(&id),sizeof(io_unsigned_int_type));
