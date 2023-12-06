@@ -101,20 +101,20 @@ namespace hdi{
     }
 
 
-    template <class map_type>
-    void extractSubGraph(const std::vector<map_type>& orig_transition_matrix, const std::vector<unsigned int>& selected_idxes, std::vector<map_type>& new_transition_matrix, std::vector<unsigned int>& new_idxes, typename map_type::mapped_type thresh)
+    template <class map_type, typename uinteger>
+    void extractSubGraph(const std::vector<map_type>& orig_transition_matrix, const std::vector<uinteger>& selected_idxes, std::vector<map_type>& new_transition_matrix, std::vector<uinteger>& new_idxes, typename map_type::mapped_type thresh)
     {
       new_transition_matrix.clear();
       new_idxes.clear();
-      std::map<unsigned int,unsigned int> map_selected_idxes;
-      std::map<unsigned int,unsigned int> map_non_selected_idxes;
+      std::map<uinteger, uinteger> map_selected_idxes;
+      std::map<uinteger, uinteger> map_non_selected_idxes;
       //The selected rows must be taken completely
       for(auto id: selected_idxes){
         map_selected_idxes[id] = new_idxes.size();
         new_idxes.push_back(id);
       }
 
-      if constexpr (std::is_same_v<map_type, hdi::data::SparseVec<uint32_t, float>>)
+      if constexpr (std::is_same_v<map_type, hdi::data::SparseVec<unsigned int, float>>)
       {
         //Vertices that are connected to a selected vertex
         for (auto& e : map_selected_idxes) {
@@ -223,17 +223,17 @@ namespace hdi{
 
     }
 
-    template <class sparse_scalar_matrix_type>
-    void removeEdgesToUnselectedVertices(sparse_scalar_matrix_type& adjacency_matrix, const std::vector<unsigned int>& valid_vertices){
+    template <class sparse_scalar_matrix_type, typename uinteger>
+    void removeEdgesToUnselectedVertices(sparse_scalar_matrix_type& adjacency_matrix, const std::vector<uinteger>& valid_vertices){
 
-      std::unordered_map<unsigned int,unsigned int> valid_set;
+      std::unordered_map<uinteger, uinteger> valid_set;
       for(int i = 0; i < valid_vertices.size(); ++i){
         valid_set[valid_vertices[i]] = i;
       }
 
       sparse_scalar_matrix_type new_map(adjacency_matrix.size());
       for(int i = 0; i < adjacency_matrix.size(); ++i){
-        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<unsigned int, float>>>)
         {
           for (Eigen::SparseVector<float>::InnerIterator it(adjacency_matrix[i].memory()); it; ++it) {
             auto search_iter = valid_set.find(it.index());
@@ -285,7 +285,7 @@ namespace hdi{
       //normalize
       for(int j = 0; j < dst.size(); ++j){
         double sum = 0;
-        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<unsigned int, float>>>)
         {
           for (Eigen::SparseVector<float>::InnerIterator it(dst[j].memory()); it; ++it) {
             sum += it.value();
