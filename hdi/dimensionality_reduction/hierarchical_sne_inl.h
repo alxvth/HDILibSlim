@@ -1992,7 +1992,7 @@ namespace hdi {
         checkAndThrowRuntime(minor_version == 0, "Invalid minor version");
 
         //Number of scales
-        io_unsigned_int_type num_scales;
+        io_unsigned_int_type num_scales(0);
         stream.read(reinterpret_cast<char*>(&num_scales), sizeof(io_unsigned_int_type));
         checkAndThrowRuntime(num_scales > 0, "Cannot load an empty hierarchy");
         {
@@ -2024,7 +2024,7 @@ namespace hdi {
         for (int s = 1; s < num_scales; ++s) {
           hsne.hierarchy().push_back(typename hsne_type::Scale());
           auto& scale = hsne.scale(s);
-          io_unsigned_int_type n;
+          io_unsigned_int_type n(0);
 
           utils::secureLogValue(log, "Loading scale", s);
           stream.read(reinterpret_cast<char*>(&n), sizeof(io_unsigned_int_type));
