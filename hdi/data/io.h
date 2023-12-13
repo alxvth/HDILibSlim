@@ -165,8 +165,7 @@ namespace hdi{
         io_unsigned_int_type num_rows(0);
         stream.read(reinterpret_cast<char*>(&num_rows),sizeof(io_unsigned_int_type));
         matrix.clear();
-        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
-          matrix.resize(num_rows);
+        matrix.resize(num_rows);
 
         for(io_unsigned_int_type j = 0; j < num_rows; ++j){
           //number of elements in the current row
