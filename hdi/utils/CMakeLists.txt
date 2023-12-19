@@ -12,6 +12,10 @@ target_include_directories(${PROJECT_UTILS} PRIVATE ${PROJECT_SOURCE_DIR})
 
 target_compile_features(${PROJECT_UTILS} PRIVATE cxx_std_17)
 
+if(ENABLE_PID)
+    set_target_properties(${PROJECT_UTILS} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
+
 if(USE_OPENMP AND OpenMP_CXX_FOUND)
 	target_link_libraries(${PROJECT_UTILS} PRIVATE OpenMP::OpenMP_CXX)
 endif()

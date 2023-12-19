@@ -2,12 +2,14 @@ cmake_minimum_required (VERSION 3.21)
 
 set(USE_AVX ON CACHE BOOL "Use AVX instructions sets if available")
 set(USE_OPENMP ON CACHE BOOL "Use OpenMP - by default ON")
+set(ENABLE_PID OFF CACHE BOOL "Whether to build position independent code")
 set(INSTALL_HDILibSlim ON CACHE BOOL "Whether to install the HDILibSlim")
 
 set(PROJECT_HDILibSlim "HDILibSlim")
 PROJECT(${PROJECT_HDILibSlim} C CXX)
 
 set(HDILibSlim_VERSION "undefined" CACHE STRING "HDILibSlim Library version")
+
 # Disallow in-source builds. 
 # Build in sub dir e.g. source/build* is still allowed!
 if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}" AND NOT $ENV{CI})
@@ -29,12 +31,15 @@ if (CMAKE_GENERATOR STREQUAL Xcode)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12" CACHE STRING "Minimum OS X deployment version")
 endif()
 
-message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
+if (ENABLE_PID)
+  message(STATUS "Position independent code code compilation ON")
+endif()
 
 # CMake Options
 # Set the directory where CMake include files are to be found
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-# cmake utils
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 include(CMakeCommon)
 
 if(MSVC)

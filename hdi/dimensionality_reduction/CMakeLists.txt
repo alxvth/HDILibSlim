@@ -16,10 +16,13 @@ get_filename_component(ANNOY_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../exte
 target_include_directories(${PROJECT_DR} PRIVATE ${ANNOY_INCLUDE_DIR})
 message (STATUS "Annoy: " ${ANNOY_INCLUDE_DIR})
 
-
 #set_target_properties(${PROJECT_DR} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 
 target_compile_features(${PROJECT_DR} PRIVATE cxx_std_17)
+
+if(ENABLE_PID)
+    set_target_properties(${PROJECT_DR} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
 
 if(USE_OPENMP AND OpenMP_CXX_FOUND)
 	target_link_libraries(${PROJECT_DR} PRIVATE OpenMP::OpenMP_CXX)

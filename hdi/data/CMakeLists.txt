@@ -12,6 +12,10 @@ set_target_properties(${PROJECT_DATA} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 
 target_compile_features(${PROJECT_DATA} PRIVATE cxx_std_17)
 
+if(ENABLE_PID)
+    set_target_properties(${PROJECT_DATA} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
+
 if(USE_OPENMP AND OpenMP_CXX_FOUND)
 	target_link_libraries(${PROJECT_DATA} PRIVATE OpenMP::OpenMP_CXX)
 endif()
