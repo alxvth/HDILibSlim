@@ -34,6 +34,7 @@
 #define GRAPH_ALGORITHMS_H
 
 #include <vector>
+#include "hdi/data/map_mem_eff.h"
 #include "hdi/data/sparse_mat.h"
 
 namespace hdi{
