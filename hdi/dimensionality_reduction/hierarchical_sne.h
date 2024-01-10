@@ -67,7 +67,7 @@ namespace hdi {
     public:
       class Scale {
       public:
-        unsigned_int_type size()const { return _landmark_to_original_data_idx.size(); }
+        unsigned_int_type size()const { return static_cast<unsigned_int_type>(_landmark_to_original_data_idx.size()); }
 
       public:
         scalar_type mimMemoryOccupation()const;

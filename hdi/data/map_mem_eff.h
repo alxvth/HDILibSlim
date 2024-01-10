@@ -128,7 +128,7 @@ namespace hdi{
     template <class Key, class T>
     typename MapMemEff<Key,T>::const_iterator MapMemEff<Key,T>::find(const key_type& k)const {
       int l = 0;
-      int r = _memory.size()-1;
+      int r = static_cast<int>(_memory.size()-1);
       int m = 0;
 
       if(size()==0){
