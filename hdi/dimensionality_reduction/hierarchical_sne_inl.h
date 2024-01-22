@@ -325,7 +325,7 @@ namespace hdi {
             scale._transition_matrix[i].resize(_num_dps);
 
           for (int n = 1; n < nn; ++n) {
-            int idx = i * nn + n;
+            unsigned_int_type idx = i * nn + n;
             auto v = distance_based_probabilities[idx];
             sum += v;
             scale._transition_matrix[i][neighborhood_graph[idx]] = v;
