@@ -1,14 +1,47 @@
 cmake_minimum_required (VERSION 3.21)
 
-set(USE_AVX ON CACHE BOOL "Use AVX instructions sets if available")
-set(USE_OPENMP ON CACHE BOOL "Use OpenMP - by default ON")
-set(ENABLE_PID OFF CACHE BOOL "Whether to build position independent code")
-set(INSTALL_HDILibSlim ON CACHE BOOL "Whether to install the HDILibSlim")
-
 set(PROJECT_HDILibSlim "HDILibSlim")
 PROJECT(${PROJECT_HDILibSlim} C CXX)
 
 set(HDILibSlim_VERSION "undefined" CACHE STRING "HDILibSlim Library version")
+
+# -----------------------------------------------------------------------------
+# User Options
+# -----------------------------------------------------------------------------
+set(USE_AVX ON CACHE BOOL "Use AVX instructions sets if available")
+set(USE_OPENMP ON CACHE BOOL "Use OpenMP - by default ON")
+set(OPTIMIZATION_LEVEL "2" CACHE STRING "Optimization level for all targets in release builds, e.g. 0, 1, 2")
+set(ENABLE_PID OFF CACHE BOOL "Whether to build position independent code")
+set(INSTALL_HDILibSlim ON CACHE BOOL "Whether to install the HDILibSlim")
+
+if (USE_AVX)
+    message("USE_AVX is ON")
+endif()
+
+if (USE_OPENMP)
+    message("USE_OPENMP is ON")
+endif()
+
+if (ENABLE_PID)
+    message(STATUS "Position independent code compilation ON")
+endif()
+
+# -----------------------------------------------------------------------------
+# CMake Options
+# -----------------------------------------------------------------------------
+
+# Set the directory where CMake include files are to be found
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Test hardware avx capabilities
+include(CMakeSetOptimizationAndAVX)
+
+if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DWIN32 /EHsc /MP /W2 /permissive- /Zc:__cplusplus")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
+endif(MSVC)
 
 # Disallow in-source builds. 
 # Build in sub dir e.g. source/build* is still allowed!
@@ -31,38 +64,27 @@ if (CMAKE_GENERATOR STREQUAL Xcode)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12" CACHE STRING "Minimum OS X deployment version")
 endif()
 
-if (ENABLE_PID)
-  message(STATUS "Position independent code code compilation ON")
-endif()
-
-# CMake Options
-# Set the directory where CMake include files are to be found
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-include(CMakeCommon)
-
-if(MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W2 /permissive- /Zc:__cplusplus")
-endif()
-
+# -----------------------------------------------------------------------------
 # Dependencies
+# -----------------------------------------------------------------------------
 find_package(OpenMP)
 find_package(Eigen3 3.4 CONFIG REQUIRED NO_MODULE)
 
 if(OPENMP_FOUND)
-	message (STATUS "OpenMP found ${OpenMP_CXX_LIB_NAMES}")
+    message (STATUS "OpenMP found ${OpenMP_CXX_LIB_NAMES}")
 endif()
 
-# add projects
-add_subdirectory (hdi/utils)						# PROJECT_UTILS
-add_subdirectory (hdi/data)							# PROJECT_DATA
-add_subdirectory (hdi/dimensionality_reduction)		# PROJECT_DR
+# -----------------------------------------------------------------------------
+# Projects
+# -----------------------------------------------------------------------------
+add_subdirectory(hdi/utils)						    # PROJECT_UTILS
+add_subdirectory(hdi/data)							# PROJECT_DATA
+add_subdirectory(hdi/dimensionality_reduction)		# PROJECT_DR
 
-# build order
-add_dependencies(hdidata hdiutils)
-add_dependencies(hdidimensionalityreduction hdiutils)
-add_dependencies(hdidimensionalityreduction hdidata)
+# -----------------------------------------------------------------------------
+# Create HDILibSlim find_package
+# -----------------------------------------------------------------------------
+# NOTE CMake installs are defined in the sub-projects.
 
 if(INSTALL_HDILibSlim)
 	# NOTE CMake installs are defined in the sub-projects.

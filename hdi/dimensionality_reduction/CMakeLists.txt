@@ -31,7 +31,8 @@ endif()
 target_link_libraries(${PROJECT_DR} PRIVATE Eigen3::Eigen)
 
 # Hardware accelations: SSE and AVX
-check_and_link_AVX(${PROJECT_DR} ${USE_AVX})
+check_and_set_AVX(${PROJECT_DR} ${USE_AVX})
+set_optimization_level(${PROJECT_DR} ${OPTIMIZATION_LEVEL})
 
 if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -62,6 +63,17 @@ if(INSTALL_HDILibSlim)
 		endforeach()"
 		COMPONENT PUBLIC_HEADERS
 	)
+
+    install(DIRECTORY "${HNSWLIB_INCLUDE_DIR}/hnswlib/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/hnswlib" COMPONENT HNSW_HEADERS)
+    install(CODE "foreach(ANNOY_HEADER annoylib.h kissrandom.h mman.h)
+            execute_process(
+                COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
+                    \"${ANNOY_INCLUDE_DIR}/\${ANNOY_HEADER}\" 
+                    \"${CMAKE_INSTALL_PREFIX}/include/\${ANNOY_HEADER}\"
+            )
+        endforeach()"
+        COMPONENT ANNOY_HEADERS
+    )
 
 	install(EXPORT ${PROJECT_DR}Targets
 			FILE ${PROJECT_DR}Targets.cmake

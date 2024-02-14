@@ -23,7 +23,8 @@ endif()
 target_link_libraries(${PROJECT_DATA} PRIVATE Eigen3::Eigen)
 
 # Hardware accelations: SSE and AVX
-check_and_link_AVX(${PROJECT_DATA} ${USE_AVX})
+check_and_set_AVX(${PROJECT_DATA} ${USE_AVX})
+set_optimization_level(${PROJECT_DATA} ${OPTIMIZATION_LEVEL})
 
 target_link_libraries(${PROJECT_DATA} PRIVATE ${OPENGL_LIBRARIES})
 
