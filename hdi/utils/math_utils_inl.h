@@ -169,7 +169,7 @@ namespace hdi{
     }
 
     template <typename Vector>
-    double computeGaussianDistributionWithFixedPerplexity(typename Vector::const_iterator distances_begin, typename Vector::const_iterator distances_end, typename Vector::iterator distribution_begin, typename Vector::iterator distribution_end, double perplexity, int max_iterations, double tol, int ignore){
+    double computeGaussianDistributionWithFixedPerplexity(typename Vector::const_iterator distances_begin, typename Vector::const_iterator distances_end, typename Vector::iterator distribution_begin, typename Vector::iterator distribution_end, double perplexity, int max_iterations, double tol, int ignore, bool signExpArgNeg){
       const int size(static_cast<int>(std::distance(distances_begin, distances_end)));
       if(size != std::distance(distribution_begin, distribution_end) || size == 0){
         throw std::logic_error("Invalid containers");
@@ -182,6 +182,8 @@ namespace hdi{
       double max_beta =  std::numeric_limits<double>::max();
     
       const double double_max = std::numeric_limits<double>::max();
+
+      double sign = (signExpArgNeg) ? -1. : 1.;
 
       // Iterate until we found a good perplexity
       int iter = 0; 
@@ -197,7 +199,7 @@ namespace hdi{
               (*distribution_iter) = 0;
               continue;
             }
-            double v = std::exp(-beta * (*distance_iter));
+            double v = std::exp(sign * beta * (*distance_iter));
             sigma = std::sqrt(1/(2*beta));
             //double v = exp(- (*distance_iter) / (2*sigma*sigma));
             (*distribution_iter) = static_cast<Vector::value_type>(v);
