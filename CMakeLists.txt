@@ -15,11 +15,11 @@ set(ENABLE_PID OFF CACHE BOOL "Whether to build position independent code")
 set(INSTALL_HDILibSlim ON CACHE BOOL "Whether to install the HDILibSlim")
 
 if (USE_AVX)
-    message("USE_AVX is ON")
+    message(STATUS "USE_AVX is ON")
 endif()
 
 if (USE_OPENMP)
-    message("USE_OPENMP is ON")
+    message(STATUS "USE_OPENMP is ON")
 endif()
 
 if (ENABLE_PID)
