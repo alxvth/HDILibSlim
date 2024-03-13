@@ -245,16 +245,15 @@ namespace hdi{
         iter++;
       
       }
-      if(!found){
-        auto v = static_cast<Vector::value_type>(1./(size+((ignore<0||ignore>=size)?0:-1)));
-        for(auto distribution_iter = distribution_begin; distribution_iter != distribution_end; ++distribution_iter){
-          (*distribution_iter) = v;
-        }
-        return 0;
-      }
+
+      if(!found)
+        sigma = 0;
+
+      // Normalize
       for(auto distribution_iter = distribution_begin; distribution_iter != distribution_end; ++distribution_iter){
         (*distribution_iter) = static_cast<Vector::value_type>(*distribution_iter / sum_distribution);
       }
+
       return sigma;
     }
 
