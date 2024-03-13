@@ -187,10 +187,10 @@ namespace hdi{
 
       // Iterate until we found a good perplexity
       int iter = 0; 
-      double sum_distribution = std::numeric_limits<double>::min();
+      double sum_distribution = 0;
       while(!found && iter < max_iterations) {
         // Compute Gaussian kernel row
-        sum_distribution = std::numeric_limits<double>::min();
+        sum_distribution = 0;
         {
           auto distance_iter = distances_begin;
           auto distribution_iter = distribution_begin;
@@ -209,7 +209,8 @@ namespace hdi{
           sigma = std::sqrt(1 / (2 * beta));
         }
 
-        double H = .0; //entropy
+        // Compute entropy
+        double H = .0;
         {
           auto distance_iter = distances_begin;
           auto distribution_iter = distribution_begin;
@@ -224,6 +225,7 @@ namespace hdi{
       
         // Evaluate whether the entropy is within the tolerance level
         double Hdiff = H - log(perplexity);
+
         if(Hdiff < tol && -Hdiff < tol){
           found = true;
         } 
