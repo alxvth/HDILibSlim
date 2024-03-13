@@ -194,18 +194,19 @@ namespace hdi{
         {
           auto distance_iter = distances_begin;
           auto distribution_iter = distribution_begin;
+          double v = 0.;
           for(int idx = 0; distance_iter != distances_end; ++distance_iter, ++distribution_iter, ++idx){
             if(idx == ignore){
               (*distribution_iter) = 0;
               continue;
             }
-            double v = std::exp(sign * beta * (*distance_iter));
-            sigma = std::sqrt(1/(2*beta));
-            //double v = exp(- (*distance_iter) / (2*sigma*sigma));
+            v = std::exp(sign * beta * (*distance_iter));
+            
             (*distribution_iter) = static_cast<Vector::value_type>(v);
             sum_distribution += v;
           }
 
+          sigma = std::sqrt(1 / (2 * beta));
         }
 
         double H = .0; //entropy
