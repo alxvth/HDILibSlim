@@ -218,14 +218,12 @@ namespace hdi {
       utils::secureLog(_logger, "Computing high-dimensional joint probability distribution...");
 
       const int n = getNumberOfDataPoints();
+
       if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
       {
         for (int j = 0; j < n; ++j)
           _P[j].resize(n);
-      }
 
-      if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
-      {
         for (int j = 0; j < n; ++j) {
           for (Eigen::SparseVector<float>::InnerIterator it(probabilities[j].memory()); it; ++it) {
             scalar_type v0 = it.value();
@@ -242,7 +240,6 @@ namespace hdi {
       {
 #pragma omp parallel
         {
-          const int n = getNumberOfDataPoints();
           int j = 0;
           float tmp = 0;
 
