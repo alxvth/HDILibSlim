@@ -68,7 +68,7 @@ namespace hdi{
     double computeGaussianDistribution(typename Vector::const_iterator distances_begin, typename Vector::const_iterator distances_end, typename Vector::iterator distr_begin, typename Vector::iterator distr_end, double sigma);
 
     template <typename Vector>
-    double computeGaussianDistributionWithFixedPerplexity(typename Vector::const_iterator distances_begin, typename Vector::const_iterator distances_end, typename Vector::iterator distr_begin, typename Vector::iterator distr_end, double perplexity, int max_iterations = 500, double tol = 1e-5, int ignore = -1, bool signExpArgNeg = true);
+    double computeGaussianDistributionWithFixedPerplexity(typename Vector::const_iterator distances_begin, typename Vector::const_iterator distances_end, typename Vector::iterator distr_begin, typename Vector::iterator distr_end, double perplexity, int max_iterations = 500, double tol = 1e-5, int ignore = -1);
 
     template <typename Vector>
     double computeGaussianDistributionWithFixedWeight(typename Vector::const_iterator distances_begin, typename Vector::const_iterator distances_end, typename Vector::iterator distr_begin, typename Vector::iterator distr_end, double weight, int max_iterations = 500, double tol = 1e-5, int ignore = -1);
