@@ -37,27 +37,27 @@
 #include "hdi/dimensionality_reduction/gradient_descent_tsne_texture.h"
 #include "hdi/utils/math_utils.h"
 #include "hdi/utils/log_helper_functions.h"
-#include "hdi/utils/scoped_timers.h"
-#include "sptree.h"
-#include <random>
-#include <type_traits>
-
-#if defined(_OPENMP)
-#include <omp.h>
-#endif
 
 namespace hdi {
   namespace dr {
 
     template <typename sparse_scalar_matrix_type>
     GradientDescentTSNETexture<sparse_scalar_matrix_type>::GradientDescentTSNETexture() :
+      _embedding(nullptr),
+      _embedding_container(nullptr),
       _initialized(false),
+      _exaggeration_baseline(1),
+      _P(),
+      _Q(),
+      _params(),
+      _iteration(0),
       _logger(nullptr),
-      _exaggeration_baseline(1)
-    {
 #ifndef __APPLE__
-      _gpgpu_type = AUTO_DETECT;
+      _gpgpu_compute_tsne(),
+      _gpgpu_type(AUTO_DETECT),
 #endif
+      _gpgpu_raster_tsne()
+    {
     }
     template GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::GradientDescentTSNETexture();
     template GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::GradientDescentTSNETexture();
@@ -352,13 +352,17 @@ namespace hdi {
     template void GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::doAnIterationImpl(double);
 
     template <typename sparse_scalar_matrix_type>
-    double GradientDescentTSNETexture<sparse_scalar_matrix_type>::computeKullbackLeiblerDivergence() {
+    double GradientDescentTSNETexture<sparse_scalar_matrix_type>::computeKullbackLeiblerDivergence(bool computeQ) {
       const int n = _embedding->numDataPoints();
 
-      //std::vector<float> _Q(n * n);
+      if(computeQ)
+        _Q.resize(n * n);
+
       double sum_Q = 0;
       for (int j = 0; j < n; ++j) {
-        //_Q[j*n + j] = 0;
+
+        if (computeQ)
+          _Q[j*n + j] = 0;
 
         for (int i = j + 1; i < n; ++i) {
           const double euclidean_dist_sq(
@@ -371,16 +375,14 @@ namespace hdi {
           );
           const double v = 1. / (1. + euclidean_dist_sq);
 
-          //_Q[j*n + i] = static_cast<float>(v);
-          //_Q[i*n + j] = static_cast<float>(v);
+          if (computeQ)
+          {
+            _Q[j*n + i] = static_cast<float>(v);
+            _Q[i*n + j] = static_cast<float>(v);
+          }
           sum_Q += v * 2;
         }
       }
-
-      //double sum_Q = 0;
-      //for (auto& v : _Q) {
-      //  sum_Q += v;
-      //}
 
       double kl = 0;
 
@@ -440,8 +442,8 @@ namespace hdi {
       }
       return kl;
     }
-    template double GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::computeKullbackLeiblerDivergence();
-    template double GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::computeKullbackLeiblerDivergence();
+    template double GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::computeKullbackLeiblerDivergence(bool);
+    template double GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::computeKullbackLeiblerDivergence(bool);
 
   }
 }
