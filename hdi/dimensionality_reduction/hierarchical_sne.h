@@ -59,8 +59,8 @@ namespace hdi {
     public:
       typedef sparse_scalar_matrix sparse_scalar_matrix_type;
       typedef scalar scalar_type;
-      typedef uint32_t unsigned_int_type;
-      typedef int32_t int_type;
+      typedef uint64_t unsigned_int_type;
+      typedef int64_t int_type;
       typedef std::vector<scalar_type> scalar_vector_type; //! Vector of scalar_type
       typedef uint32_t data_handle_type;
 
@@ -339,7 +339,7 @@ namespace hdi {
       //!Compute a random walk using a transition matrix and return the end point after a max_length steps -> used for landmark selection
       inline unsigned_int_type randomWalk(unsigned_int_type starting_point, unsigned_int_type max_length, const sparse_scalar_matrix_type& transition_matrix, std::uniform_real_distribution<double>& distribution, std::default_random_engine& generator);
       //!Compute a random walk using a transition matrix that stops at a provided stopping point -> used for landmark similarity computation
-      inline int randomWalk(unsigned_int_type starting_point, const std::vector<int>& stopping_points, unsigned_int_type max_length, const sparse_scalar_matrix_type& transition_matrix, std::uniform_real_distribution<double>& distribution, std::default_random_engine& generator);
+      inline int_type randomWalk(unsigned_int_type starting_point, const std::vector<int>& stopping_points, unsigned_int_type max_length, const sparse_scalar_matrix_type& transition_matrix, std::uniform_real_distribution<double>& distribution, std::default_random_engine& generator);
 
       void computeHighDimensionalDistances(const scalar_type* high_dimensional_data, size_t num_dim, size_t num_dps, knn_params params, std::vector<scalar_type>& distances_squared, std::vector<int>& neighborhood_indices);
 
@@ -371,7 +371,7 @@ namespace hdi {
     void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::computeAoI(const HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>& hsne, unsigned_int_type scale, const std::vector<unsigned_int_type>& idxes, Functor& functor) {
       std::vector<scalar_type> aoi;
       hsne.getAreaOfInfluence(scale, idxes, aoi);
-      for (int i = 0; i < aoi.size(); ++i) {
+      for (size_t i = 0; i < aoi.size(); ++i) {
         functor(i, aoi[i]);
       }
     }
