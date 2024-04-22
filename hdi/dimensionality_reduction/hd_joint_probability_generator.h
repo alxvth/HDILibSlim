@@ -33,17 +33,17 @@
 #ifndef HD_JOINT_PROBABILITY_GENERATOR_H
 #define HD_JOINT_PROBABILITY_GENERATOR_H
 
-#include <vector>
-#include <stdint.h>
 #include "hdi/utils/assert_by_exception.h"
 #include "hdi/utils/abstract_log.h"
 #include "hdi/dimensionality_reduction/knn_utils.h"
-#include <map>
-#include <unordered_map>
-#include <random>
-#include <unordered_set>
 #include "hdi/data/map_mem_eff.h"
 #include "hdi/data/sparse_mat.h"
+
+#include <cstdint>
+#include <map>
+#include <random>
+#include <stdint.h>
+#include <vector>
 
 namespace hdi{
   namespace dr{
@@ -55,13 +55,14 @@ namespace hdi{
       \author Nicola Pezzotti
       \warning Due to numeric limits, the output matrix is not normalized. In order to have a joint-probability distribution each cell must be divided by 2*num_dps
     */
-    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::SparseVec<uint32_t, float> >, typename integer = int>
+    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::SparseVec<uint32_t, float> >, typename integer = std::int64_t, typename unsigned_integer = std::uint64_t>
     class HDJointProbabilityGenerator {
     public:
       typedef scalar scalar_type;
       typedef sparse_scalar_matrix sparse_scalar_matrix_type;
       typedef std::vector<scalar_type> scalar_vector_type; //! Vector of scalar_type
       typedef integer integer_type;
+      typedef unsigned_integer unsigned_int_type;
 
     public:
       //! Parameters used for the initialization of the algorithm
@@ -101,12 +102,14 @@ namespace hdi{
     public:
       HDJointProbabilityGenerator();
 
-      void computeJointProbabilityDistribution(/*const*/ scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, sparse_scalar_matrix& distribution, Parameters params = Parameters());
-      void computeProbabilityDistributions(/*const*/ scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, sparse_scalar_matrix& distribution, Parameters params = Parameters());
-      void computeProbabilityDistributions(/*const*/ scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, std::vector<scalar_type>& probabilities, std::vector<integer_type>& indices, Parameters params = Parameters());
-      void computeProbabilityDistributionsFromDistanceMatrix(const std::vector<scalar_type>& squared_distance_matrix, unsigned int num_dps, sparse_scalar_matrix& distribution, Parameters params = Parameters());
+      void computeJointProbabilityDistribution(/*const*/ scalar_type* high_dimensional_data, size_t num_dim, size_t num_dps, sparse_scalar_matrix& distribution, Parameters params = Parameters());
+      void computeProbabilityDistributions(/*const*/ scalar_type* high_dimensional_data, size_t num_dim, size_t num_dps, sparse_scalar_matrix& distribution, Parameters params = Parameters());
+      void computeProbabilityDistributions(/*const*/ scalar_type* high_dimensional_data, size_t num_dim, size_t num_dps, std::vector<scalar_type>& probabilities, std::vector<integer_type>& indices, Parameters params = Parameters());
+      
+            //! Compute a gaussian distribution for each data point given pre-calculated distances. Expects a full (square) distances matrix
+      void computeProbabilityDistributionsFromDistanceMatrix(const std::vector<scalar_type>& squared_distance_matrix, size_t num_dps, sparse_scalar_matrix& distribution, Parameters params = Parameters());
      
-      //! Compute a gaussian distribution for each data-point - interface for pre-calculated kNN
+      //! Compute a gaussian distribution for each data point given pre-calculated kNN. Expects the first neighbors to be the data point itself and ignores it
       void computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<integer_type>& indices, int nn, sparse_scalar_matrix& distribution, Parameters& params);
 
       //! Return the current log

@@ -126,7 +126,7 @@ namespace hdi{
       }
       template <typename It>
       static void initialize(MapMemEff<Key,T>& map, It begin, It end, T thresh = 0){
-        map.initialize(begin,end, thresh);
+        map.initialize(begin, end, thresh);
       }
       static void invert(const std::vector<hdi::data::MapMemEff<Key,T>>& matrix, std::vector<hdi::data::MapMemEff<Key,T>>& inverse){
         inverse.resize(matrix.size());

@@ -59,10 +59,11 @@ namespace hdi {
     public:
       typedef sparse_scalar_matrix sparse_scalar_matrix_type;
       typedef scalar scalar_type;
-      typedef uint64_t unsigned_int_type;
-      typedef int64_t int_type;
+      typedef std::uint64_t unsigned_int_type;
+      typedef std::int64_t int_type;
       typedef std::vector<scalar_type> scalar_vector_type; //! Vector of scalar_type
-      typedef uint32_t data_handle_type;
+      typedef typename sparse_scalar_matrix_type::value_type::key_type data_handle_type; // default uint32_t
+      typedef typename sparse_scalar_matrix_type::value_type::mapped_type data_mapped_type; // default float
 
     public:
       class Scale {
@@ -228,7 +229,7 @@ namespace hdi {
     public:
       HierarchicalSNE();
       //! Set the dimensionality of the data
-      void setDimensionality(int dimensionality) {
+      void setDimensionality(int_type dimensionality) {
         checkAndThrowLogic(!_initialized, "Class should be uninitialized to change the dimensionality");
         checkAndThrowLogic(dimensionality > 0, "Invalid dimensionality");
         _dimensionality = dimensionality;
@@ -271,8 +272,6 @@ namespace hdi {
       scale_type& top_scale() { return _hierarchy[_hierarchy.size() - 1]; }
       //! Return the top scale
       const scale_type& top_scale()const { return _hierarchy[_hierarchy.size() - 1]; }
-
-
 
       //! Return the indexes of landmarks at "scale_id-1" that are influenced by the landmarks in idxes of scale "scale_id"
       void getInfluencedLandmarksInPreviousScale(unsigned_int_type scale_id, std::vector<unsigned_int_type>& idxes, std::map<unsigned_int_type, scalar_type>& neighbors)const;
@@ -339,7 +338,7 @@ namespace hdi {
       //!Compute a random walk using a transition matrix and return the end point after a max_length steps -> used for landmark selection
       inline unsigned_int_type randomWalk(unsigned_int_type starting_point, unsigned_int_type max_length, const sparse_scalar_matrix_type& transition_matrix, std::uniform_real_distribution<double>& distribution, std::default_random_engine& generator);
       //!Compute a random walk using a transition matrix that stops at a provided stopping point -> used for landmark similarity computation
-      inline int_type randomWalk(unsigned_int_type starting_point, const std::vector<int>& stopping_points, unsigned_int_type max_length, const sparse_scalar_matrix_type& transition_matrix, std::uniform_real_distribution<double>& distribution, std::default_random_engine& generator);
+      inline int_type randomWalk(unsigned_int_type starting_point, const std::vector<int_type>& stopping_points, unsigned_int_type max_length, const sparse_scalar_matrix_type& transition_matrix, std::uniform_real_distribution<double>& distribution, std::default_random_engine& generator);
 
       void computeHighDimensionalDistances(const scalar_type* high_dimensional_data, size_t num_dim, size_t num_dps, knn_params params, std::vector<scalar_type>& distances_squared, std::vector<int>& neighborhood_indices);
 

@@ -107,7 +107,7 @@ namespace hdi {
       }
       embedding_position.resize(_params._embedding_dimensionality);
       for (int i = 0; i < _params._embedding_dimensionality; ++i) {
-        (*_embedding_container)[i] = (*_embedding_container)[handle*_params._embedding_dimensionality + i];
+        (*_embedding_container)[i] = (*_embedding_container)[static_cast<size_t>(handle) * _params._embedding_dimensionality + i];
       }
     }
     template void GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::getEmbeddingPosition(scalar_vector_type&, data_handle_type) const;
@@ -122,11 +122,11 @@ namespace hdi {
       utils::secureLog(_logger, "Initializing tSNE...");
       {//Aux data
         _params = params;
-        unsigned int size = probabilities.size();
+        const size_t size = probabilities.size();
 
         _embedding = embedding;
         _embedding_container = &(embedding->getContainer());
-        _embedding->resize(_params._embedding_dimensionality, size);
+        _embedding->resize(static_cast<size_t>(_params._embedding_dimensionality), size);
         _P.clear();
         _P.resize(size);
       }
@@ -162,7 +162,7 @@ namespace hdi {
       utils::secureLog(_logger, "Initializing tSNE with a user-defined joint-probability distribution...");
       {//Aux data
         _params = params;
-        unsigned int size = distribution.size();
+        const size_t size = distribution.size();
 
         _embedding = embedding;
         _embedding_container = &(embedding->getContainer());
@@ -217,14 +217,14 @@ namespace hdi {
     void GradientDescentTSNETexture<sparse_scalar_matrix_type>::computeHighDimensionalDistribution(const sparse_scalar_matrix_type& probabilities) {
       utils::secureLog(_logger, "Computing high-dimensional joint probability distribution...");
 
-      const int n = getNumberOfDataPoints();
+      const size_t n = getNumberOfDataPoints();
 
       if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
       {
-        for (int j = 0; j < n; ++j)
+        for (size_t j = 0; j < n; ++j)
           _P[j].resize(n);
 
-        for (int j = 0; j < n; ++j) {
+        for (size_t j = 0; j < n; ++j) {
           for (Eigen::SparseVector<float>::InnerIterator it(probabilities[j].memory()); it; ++it) {
             scalar_type v0 = it.value();
             scalar_type v1 = 0.;
@@ -240,11 +240,8 @@ namespace hdi {
       {
 #pragma omp parallel
         {
-          int j = 0;
-          float tmp = 0;
-
 #pragma omp for
-        for (int j = 0; j < n; ++j) {
+        for (std::int64_t j = 0; j < n; ++j) {
           for (auto& elem : probabilities[j]) {
               scalar_type v0 = elem.second;
               auto iter = probabilities[elem.first].find(j);
@@ -278,7 +275,7 @@ namespace hdi {
         std::srand(seed);
       }
 
-      for (int i = 0; i < _embedding->numDataPoints(); ++i) {
+      for (size_t i = 0; i < _embedding->numDataPoints(); ++i) {
         double x(0.);
         double y(0.);
         double radius(0.);
@@ -353,18 +350,18 @@ namespace hdi {
 
     template <typename sparse_scalar_matrix_type>
     double GradientDescentTSNETexture<sparse_scalar_matrix_type>::computeKullbackLeiblerDivergence(bool computeQ) {
-      const int n = _embedding->numDataPoints();
+      const size_t n = _embedding->numDataPoints();
 
       if(computeQ)
         _Q.resize(n * n);
 
       double sum_Q = 0;
-      for (int j = 0; j < n; ++j) {
+      for (size_t j = 0; j < n; ++j) {
 
         if (computeQ)
           _Q[j*n + j] = 0;
 
-        for (int i = j + 1; i < n; ++i) {
+        for (size_t i = j + 1; i < n; ++i) {
           const double euclidean_dist_sq(
             utils::euclideanDistanceSquared<float>(
               _embedding->getContainer().begin() + j * _params._embedding_dimensionality,
@@ -386,11 +383,11 @@ namespace hdi {
 
       double kl = 0;
 
-      for (int i = 0; i < n; ++i) {
+      for (size_t i = 0; i < n; ++i) {
         if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
         {
           for (Eigen::SparseVector<float>::InnerIterator it(_P[i].memory()); it; ++it) {
-            uint32_t j = it.index();
+            auto j = it.index();
 
             // Calculate Qij
             const double euclidean_dist_sq(
@@ -416,7 +413,7 @@ namespace hdi {
         else // MapMemEff
         {
           for (const auto& pij : _P[i]) {
-            uint32_t j = pij.first;
+            auto j = pij.first;
 
             // Calculate Qij
             const double euclidean_dist_sq(

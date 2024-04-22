@@ -75,7 +75,7 @@ namespace hdi{
         throw std::logic_error("Algorithm must be initialized before ");
       }
       embedding_position.resize(_params._embedding_dimensionality);
-      for(int i = 0; i < _params._embedding_dimensionality; ++i){
+      for(unsigned int i = 0; i < _params._embedding_dimensionality; ++i){
         (*_embedding_container)[i] = (*_embedding_container)[handle*_params._embedding_dimensionality + i];
       }
     }
@@ -89,8 +89,8 @@ namespace hdi{
       utils::secureLog(_logger,"Initializing W-tSNE...");
       {//Aux data
         _params = params;
-        unsigned int size = probabilities.size();
-        unsigned int size_sq = probabilities.size()*probabilities.size();
+        const size_t size = probabilities.size();
+        const size_t size_sq = probabilities.size()*probabilities.size();
         
         _embedding = embedding;
         _embedding_container = &(embedding->getContainer());
@@ -123,8 +123,8 @@ namespace hdi{
       utils::secureLog(_logger,"Initializing W-tSNE with a user-defined joint-probability distribution...");
       {//Aux data
         _params = params;
-        unsigned int size = distribution.size();
-        unsigned int size_sq = distribution.size()*distribution.size();
+        const size_t size = distribution.size();
+        const size_t size_sq = distribution.size()*distribution.size();
 
         _embedding = embedding;
         _embedding_container = &(embedding->getContainer());
@@ -156,9 +156,9 @@ namespace hdi{
     void WeightedTSNE<scalar, sparse_scalar_matrix>::computeHighDimensionalDistribution(const sparse_scalar_matrix& probabilities){
       utils::secureLog(_logger,"Computing high-dimensional joint probability distribution...");
 
-      const int n = getNumberOfDataPoints();
+      const size_t n = getNumberOfDataPoints();
       //Can be improved by using the simmetry of the matrix (half the memory) //TODO
-      for(int j = 0; j < n; ++j){
+      for(size_t j = 0; j < n; ++j){
         for(auto& elem: probabilities[j]){
           scalar_type v0 = elem.second;
           auto iter = probabilities[elem.first].find(j);
@@ -176,7 +176,7 @@ namespace hdi{
     void WeightedTSNE<scalar, sparse_scalar_matrix>::computeWeights(){
       _weights.clear();
       _weights.resize(_P.size(),0);
-      for(int i = 0; i < _weights.size(); ++i){
+      for(size_t i = 0; i < _weights.size(); ++i){
         for(auto v: _P[i]){
           _weights[i] += v.second;
         }
@@ -274,10 +274,9 @@ namespace hdi{
     
     template <typename scalar, typename sparse_scalar_matrix>
     void WeightedTSNE<scalar, sparse_scalar_matrix>::computeLowDimensionalDistribution(){
-      const int n = getNumberOfDataPoints();
+      const size_t n = getNumberOfDataPoints();
 
       double sum_Q = 0;
-      
       
       // Loop over all edges in the graph
 #ifdef __USE_GCD__
@@ -285,10 +284,10 @@ namespace hdi{
       dispatch_apply(n, dispatch_get_global_queue(0, 0), ^(size_t j) {
 #else
       #pragma omp parallel for
-      for(int j = 0; j < n; ++j){
+      for(std::int64_t j = 0; j < n; ++j){
 #endif //__USE_GCD__
         //_Q[j*n + j] = 0;
-        for(int i = j+1; i < n; ++i){
+        for(size_t i = j+1; i < n; ++i){
           const double euclidean_dist_sq(
               utils::euclideanDistanceSquared<scalar_type>(
                 (*_embedding_container).begin()+j*_params._embedding_dimensionality,
@@ -305,8 +304,8 @@ namespace hdi{
 #ifdef __USE_GCD__
       );
 #endif
-      for(int j = 0; j < n; ++j){
-        for(int i = 0; i < n; ++i){
+      for(size_t j = 0; j < n; ++j){
+        for(size_t i = 0; i < n; ++i){
           sum_Q += _Q[j*n + i]*_weights[j]*_weights[i];
         }
       }
@@ -315,28 +314,28 @@ namespace hdi{
 
     template <typename scalar, typename sparse_scalar_matrix>
     void WeightedTSNE<scalar, sparse_scalar_matrix>::computeExactGradient(double exaggeration){
-      const int n = getNumberOfDataPoints();
-      const int dim = _params._embedding_dimensionality;
+      const size_t n = getNumberOfDataPoints();
+      const unsigned int dim = _params._embedding_dimensionality;
 
-      for(int i = 0; i < n; ++i){
-        for(int d = 0; d < dim; ++d){
+      for(size_t i = 0; i < n; ++i){
+        for(unsigned int d = 0; d < dim; ++d){
           _gradient[i * dim + d] = 0;
         }
       }
 
-      for(int i = 0; i < n; ++i){
-        for(int j = 0; j < n; ++j){
-          for(int d = 0; d < dim; ++d){
-            const int idx = i*n + j;
+      for(size_t i = 0; i < n; ++i){
+        for(size_t j = 0; j < n; ++j){
+          for(unsigned int d = 0; d < dim; ++d){
+            const size_t idx = i*n + j;
             const double distance((*_embedding_container)[i * dim + d] - (*_embedding_container)[j * dim + d]);
             const double negative(_weights[i] * _weights[j] * _Q[idx] * _Q[idx] * distance / _normalization_Q);
             _gradient[i * dim + d] += static_cast<scalar_type>(-4*negative);
           }
         }
         for(auto& elem: _P[i]){
-          for(int d = 0; d < dim; ++d){
+          for(unsigned int d = 0; d < dim; ++d){
             const int j = elem.first;
-            const int idx = i*n + j;
+            const size_t idx = i*n + j;
             const double distance((*_embedding_container)[i * dim + d] - (*_embedding_container)[j * dim + d]);
             double p_ij = elem.second/n;
             const double positive(p_ij * _Q[idx] * distance);
@@ -372,7 +371,7 @@ namespace hdi{
       dispatch_apply(getNumberOfDataPoints(), dispatch_get_global_queue(0, 0), ^(size_t n) {
 #else
       #pragma omp parallel for
-      for(int n = 0; n < getNumberOfDataPoints(); n++){
+      for(std::int64_t n = 0; n < getNumberOfDataPoints(); n++){
 #endif //__USE_GCD__
         sptree.computeNonEdgeForces(n, _theta, negative_forces.data() + n * _params._embedding_dimensionality, sum_Q_subvalues[n]);
       }
@@ -381,11 +380,11 @@ namespace hdi{
 #endif
 
       sum_Q = 0;
-      for(int n = 0; n < getNumberOfDataPoints(); n++){
+      for(size_t n = 0; n < getNumberOfDataPoints(); n++){
         sum_Q += sum_Q_subvalues[n];
       }
 
-      for(int i = 0; i < _gradient.size(); i++){
+      for(size_t i = 0; i < _gradient.size(); i++){
         _gradient[i] = positive_forces[i] - (negative_forces[i] / sum_Q);
       }
 
@@ -397,7 +396,7 @@ namespace hdi{
 
     template <typename scalar, typename sparse_scalar_matrix>
     void WeightedTSNE<scalar, sparse_scalar_matrix>::updateTheEmbedding(double mult){
-      for(int i = 0; i < _gradient.size(); ++i){
+      for(size_t i = 0; i < _gradient.size(); ++i){
         _gain[i] = static_cast<scalar_type>((sign(_gradient[i]) != sign(_previous_gradient[i])) ? (_gain[i] + .2) : (_gain[i] * .8));
         if(_gain[i] < _params._minimum_gain){
           _gain[i] = static_cast<scalar_type>(_params._minimum_gain);

@@ -37,23 +37,23 @@ namespace hdi{
 
     template class HDJointProbabilityGenerator<float, std::vector<std::map<uint32_t, float>>>;
     // template class HDJointProbabilityGenerator<double,std::vector<std::map<uint32_t,double>>>;
-    template class HDJointProbabilityGenerator<float, std::vector<std::map<uint32_t, float>>, int64_t>;
-    template class HDJointProbabilityGenerator<float, std::vector<std::map<uint32_t, float>>, uint64_t>;
+    template class HDJointProbabilityGenerator<float, std::vector<std::map<uint32_t, float>>, std::int64_t>;
+    template class HDJointProbabilityGenerator<float, std::vector<std::map<uint32_t, float>>, std::uint64_t>;
 
     template class HDJointProbabilityGenerator<float, std::vector<std::unordered_map<uint32_t, float>>>;
     // template class HDJointProbabilityGenerator<double,std::vector<std::unordered_map<uint32_t,double>>>;
-    template class HDJointProbabilityGenerator<float, std::vector<std::unordered_map<uint32_t, float>>, int64_t>;
-    template class HDJointProbabilityGenerator<float, std::vector<std::unordered_map<uint32_t, float>>, uint64_t>;
+    template class HDJointProbabilityGenerator<float, std::vector<std::unordered_map<uint32_t, float>>, std::int64_t>;
+    template class HDJointProbabilityGenerator<float, std::vector<std::unordered_map<uint32_t, float>>, std::uint64_t>;
 
     template class HDJointProbabilityGenerator<float, std::vector<hdi::data::MapMemEff<uint32_t, float>>>;
     // template class HDJointProbabilityGenerator<double,std::vector<hdi::data::MapMemEff<uint32_t,double>>>;
-    template class HDJointProbabilityGenerator<float, std::vector<hdi::data::MapMemEff<uint32_t, float>>, int64_t>;
-    template class HDJointProbabilityGenerator<float, std::vector<hdi::data::MapMemEff<uint32_t, float>>, uint64_t>;
+    template class HDJointProbabilityGenerator<float, std::vector<hdi::data::MapMemEff<uint32_t, float>>, std::int64_t>;
+    template class HDJointProbabilityGenerator<float, std::vector<hdi::data::MapMemEff<uint32_t, float>>, std::uint64_t>;
 
     template class HDJointProbabilityGenerator<float, std::vector<hdi::data::SparseVec<uint32_t, float>>>;
     // template class HDJointProbabilityGenerator<double,std::vector<hdi::data::SparseVec<uint32_t,double>>>;
-    template class HDJointProbabilityGenerator<float, std::vector<hdi::data::SparseVec<uint32_t, float>>, int64_t>;
-    template class HDJointProbabilityGenerator<float, std::vector<hdi::data::SparseVec<uint32_t, float>>, uint64_t>;
+    template class HDJointProbabilityGenerator<float, std::vector<hdi::data::SparseVec<uint32_t, float>>, std::int64_t>;
+    template class HDJointProbabilityGenerator<float, std::vector<hdi::data::SparseVec<uint32_t, float>>, std::uint64_t>;
 
   }
 }

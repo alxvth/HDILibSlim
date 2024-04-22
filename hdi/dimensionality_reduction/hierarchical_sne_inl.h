@@ -317,7 +317,7 @@ namespace hdi {
         //        dispatch_apply(_num_dps, dispatch_get_global_queue(0, 0), ^(size_t i) {
         //#else
 #pragma omp parallel for
-        for (unsigned_int_type i = 0; i < _num_dps; ++i) {
+        for (int_type i = 0; i < _num_dps; ++i) {
           //#endif //__USE_GCD__
           scalar_type sum = 0;
 
@@ -439,7 +439,7 @@ namespace hdi {
         //        dispatch_apply(previous_scale_dp, dispatch_get_global_queue(0, 0), ^(size_t d) {
         //#else
 #pragma omp parallel for
-        for (unsigned_int_type d = 0; d < previous_scale_dp; ++d) {
+        for (int_type d = 0; d < previous_scale_dp; ++d) {
           //#endif //__USE_GCD__
           for (unsigned_int_type p = 0; p < _params._mcmcs_num_walks; ++p) {
             unsigned_int_type idx = d;
@@ -543,11 +543,11 @@ namespace hdi {
           //          dispatch_apply(previous_scale_dp, dispatch_get_global_queue(0, 0), ^(size_t d) {
           //#else
 #pragma omp parallel for
-          for (unsigned_int_type d = 0; d < previous_scale_dp; ++d) {
+          for (int_type d = 0; d < previous_scale_dp; ++d) {
             //#endif //__USE_GCD__
             std::unordered_map<unsigned_int_type, unsigned_int_type> landmarks_reached;
             for (unsigned_int_type i = 0; i < walks_per_dp; ++i) {
-              auto res = randomWalk(d, scale._previous_scale_to_landmark_idx, max_jumps, previous_scale._transition_matrix, distribution_real, generator);
+              int_type res = randomWalk(static_cast<unsigned_int_type>(d), scale._previous_scale_to_landmark_idx, max_jumps, previous_scale._transition_matrix, distribution_real, generator);
               if (res != -1) {
                 ++landmarks_reached[scale._previous_scale_to_landmark_idx[res]];
               }
@@ -694,10 +694,10 @@ namespace hdi {
             //          dispatch_apply(previous_scale_dp, dispatch_get_global_queue(0, 0), ^(size_t d) {
             //#else
 #pragma omp parallel for
-            for (unsigned_int_type d = 0; d < previous_scale_dp; ++d) {
+            for (int_type d = 0; d < previous_scale_dp; ++d) {
               //#endif //__USE_GCD__
                           //map because it must be ordered for the initialization of the maps
-              std::map<unsigned_int_type, scalar_type> landmarks_reached;
+              std::map<data_handle_type, scalar_type> landmarks_reached;
               for (unsigned_int_type i = 0; i < walks_per_dp; ++i) {
                 auto res = randomWalk(d, scale._previous_scale_to_landmark_idx, max_jumps, previous_scale._transition_matrix, distribution_real, generator);
                 if (res != -1) {
@@ -713,8 +713,8 @@ namespace hdi {
                 l.second = scalar_type(l.second) / walks_per_dp;
               }
               //saving aoi
-              map_helpers_type::initialize(scale._area_of_influence[d], landmarks_reached.begin(), landmarks_reached.end());
-              map_helpers_type::shrinkToFit(scale._area_of_influence[d]);
+              map_helpers_type::initialize(scale._area_of_influence[static_cast<size_t>(d)], landmarks_reached.begin(), landmarks_reached.end());
+              map_helpers_type::shrinkToFit(scale._area_of_influence[static_cast<size_t>(d)]);
               progress.step();
             }
             //#ifdef __USE_GCD__
@@ -760,7 +760,7 @@ namespace hdi {
             //            dispatch_apply(scale._transition_matrix.size(), dispatch_get_global_queue(0, 0), ^(size_t l) {
             //  #else
 #pragma omp parallel for
-            for (size_t l = 0; l < scale._transition_matrix.size(); ++l) {
+            for (int_type l = 0; l < scale._transition_matrix.size(); ++l) {
               //  #endif //__USE_GCD__
                             //ordered for efficient initialization
               std::map<typename sparse_scalar_matrix_type::value_type::key_type, typename sparse_scalar_matrix_type::value_type::mapped_type> temp_trans_mat; // use map here
@@ -958,7 +958,7 @@ namespace hdi {
       //      dispatch_apply(_num_dps, dispatch_get_global_queue(0, 0), ^(size_t i) {
       //#else
 #pragma omp parallel for
-      for (unsigned_int_type i = 0; i < _num_dps; ++i) {
+      for (int_type i = 0; i < _num_dps; ++i) {
         //#endif //__USE_GCD__
         influence[i] = _hierarchy[1]._area_of_influence[i];
         for (int s = 2; s <= scale; ++s) {
@@ -1001,7 +1001,7 @@ namespace hdi {
       //      dispatch_apply(n, dispatch_get_global_queue(0, 0), ^(size_t i) {
       //#else
 #pragma omp parallel for
-      for (size_t i = 0; i < n; ++i) {
+      for (int_type i = 0; i < n; ++i) {
         //#endif //__USE_GCD__
         influence[i] = _hierarchy[1]._area_of_influence[data_points[i]];
         for (int s = 2; s <= scale; ++s) {
@@ -1204,7 +1204,7 @@ namespace hdi {
       _landmarks_to_datapoints.resize(num_scales);
 
 #pragma omp parallel for
-      for (size_t scale = 1; scale < num_scales; scale++) {
+      for (int_type scale = 1; scale < num_scales; scale++) {
         auto num_landmarks = _hierarchy[scale].size();
         _landmarks_to_datapoints[scale].resize(num_landmarks);
 
@@ -1218,7 +1218,7 @@ namespace hdi {
       }
 
 #pragma omp parallel for
-      for (size_t dp = 0; dp < num_datapoints; dp++) {
+      for (int_type dp = 0; dp < num_datapoints; dp++) {
         float inf_thresh = 0.01f;
         std::vector<unsigned_int_type> top_landmark_per_scale;
         std::vector<bool> scale_has_landmark;
@@ -1264,7 +1264,7 @@ namespace hdi {
       //      dispatch_apply(subset_orig_scale.size(), dispatch_get_global_queue(0, 0), ^(size_t i) {
       //#else
 #pragma omp parallel for
-      for (size_t i = 0; i < subset_orig_scale.size(); ++i) {
+      for (int_type i = 0; i < subset_orig_scale.size(); ++i) {
         //#endif //__USE_GCD__
         assert(subset_orig_scale[i] < _hierarchy[orig_scale + 1]._area_of_influence.size());
         closeness[i] = _hierarchy[orig_scale + 1]._area_of_influence[subset_orig_scale[i]];
@@ -1312,7 +1312,7 @@ namespace hdi {
 	  // at scale 0 every point has a maximum area of influence (1) on itself.
       if (scale_id == 0) {
 		#pragma omp parallel for 
-        for (size_t i = 0; i < selection.size(); ++i) {
+        for (int_type i = 0; i < selection.size(); ++i) {
           aoi[selection[i]] = 1;
         }
       }
@@ -1321,7 +1321,7 @@ namespace hdi {
 		  // Compute for every point at the data level the area of influence (aoi) 
 		  // of the "selection" landmark points at scale scale_id through a chain of sparse matrix multiplications
 		  #pragma omp parallel for schedule(dynamic,1)
-		  for (size_t i = 0; i < scale(0).size(); ++i) {
+		  for (int_type i = 0; i < scale(0).size(); ++i) {
 			  const auto& scale_1_aois = scale(1)._area_of_influence[i];
 			  // Declare a holder for the super scale landmarks aois, using std::vector for quick look-up 
         std::vector<std::pair<key_type, mapped_type>> super_aois;
@@ -1499,7 +1499,7 @@ namespace hdi {
 
     //!Compute a random walk using a transition matrix
     template <typename scalar_type, typename sparse_scalar_matrix_type>
-    typename HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::int_type HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::randomWalk(unsigned_int_type starting_point, const std::vector<int>& stopping_points, unsigned_int_type max_length, const sparse_scalar_matrix_type& transition_matrix, std::uniform_real_distribution<double>& distribution, std::default_random_engine& generator) {
+    typename HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::int_type HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::randomWalk(unsigned_int_type starting_point, const std::vector<int_type>& stopping_points, unsigned_int_type max_length, const sparse_scalar_matrix_type& transition_matrix, std::uniform_real_distribution<double>& distribution, std::default_random_engine& generator) {
       unsigned_int_type dp_idx = starting_point;
       unsigned_int_type walk_length = 0;
       do {
@@ -1759,7 +1759,7 @@ namespace hdi {
       //      dispatch_apply(res.size(), dispatch_get_global_queue(0, 0), ^(size_t i) {
       //#else
 #pragma omp parallel for
-      for (size_t i = 0; i < res.size(); ++i) {
+      for (int_type i = 0; i < res.size(); ++i) {
         //#endif //__USE_GCD__
         computePointToClusterAssociation(hsne, i, res[i]);
       }
@@ -1812,7 +1812,7 @@ namespace hdi {
         {
           utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._comp_knn_time);
 #pragma omp parallel for
-          for (size_t i = 0; i < num_dps; ++i)
+          for (int_type i = 0; i < num_dps; ++i)
           {
             auto top_candidates = appr_alg.searchKnn(high_dimensional_data + (i * num_dim), (hnswlib::labeltype)nn);
 
@@ -1903,7 +1903,7 @@ namespace hdi {
           utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._comp_knn_time);
 
 #pragma omp parallel for
-          for (size_t n = 0; n < num_dps; n++)
+          for (int_type n = 0; n < num_dps; n++)
           {
             // Find nearest neighbors
             std::vector<int> closest;
@@ -1953,7 +1953,7 @@ namespace hdi {
           utils::secureLog(log, "\t... transition matrix ...");
           data::IO::saveSparseMatrix(scale._transition_matrix, stream, log);
         }
-        for (int s = 1; s < num_scales; ++s) {
+        for (size_t s = 1; s < static_cast<size_t>(num_scales); ++s) {
           auto& scale = hsne.scale(s);
           io_unsigned_int_type n = static_cast<io_unsigned_int_type>(scale.size());
 
@@ -2017,11 +2017,9 @@ namespace hdi {
           utils::secureLog(log, "\t... (init) landmark weights ...");
           scale._landmark_weight.resize(static_cast<size_t>(n), 1);
 
-
-
         }
 
-        for (io_unsigned_int_type s = 1; s < num_scales; ++s) {
+        for (size_t s = 1; s < static_cast<size_t>(num_scales); ++s) {
           hsne.hierarchy().push_back(typename hsne_type::Scale());
           auto& scale = hsne.scale(s);
           io_unsigned_int_type n(0);

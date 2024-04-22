@@ -68,10 +68,10 @@ namespace hdi{
     double computeGaussianDistribution(typename Vector::const_iterator distances_begin, typename Vector::const_iterator distances_end, typename Vector::iterator distr_begin, typename Vector::iterator distr_end, double sigma);
 
     template <typename Vector>
-    double computeGaussianDistributionWithFixedPerplexity(typename Vector::const_iterator distances_begin, typename Vector::const_iterator distances_end, typename Vector::iterator distr_begin, typename Vector::iterator distr_end, double perplexity, int max_iterations = 500, double tol = 1e-5, int ignore = -1);
+    double computeGaussianDistributionWithFixedPerplexity(typename Vector::const_iterator distances_begin, typename Vector::const_iterator distances_end, typename Vector::iterator distr_begin, typename Vector::iterator distr_end, double perplexity, size_t max_iterations = 500, double tol = 1e-5, std::ptrdiff_t ignore = -1);
 
     template <typename Vector>
-    double computeGaussianDistributionWithFixedWeight(typename Vector::const_iterator distances_begin, typename Vector::const_iterator distances_end, typename Vector::iterator distr_begin, typename Vector::iterator distr_end, double weight, int max_iterations = 500, double tol = 1e-5, int ignore = -1);
+    double computeGaussianDistributionWithFixedWeight(typename Vector::const_iterator distances_begin, typename Vector::const_iterator distances_end, typename Vector::iterator distr_begin, typename Vector::iterator distr_end, double weight, size_t max_iterations = 500, double tol = 1e-5, std::ptrdiff_t ignore = -1);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -124,11 +124,11 @@ namespace hdi{
     void multiply(const vector_type& a, const sparse_matrix_type& b, vector_type& c){
       assert(a.size() == b.size());
       c.resize(a.size());
-      const unsigned int n = a.size();
-      for(unsigned int i = 0; i < n; ++i){
+      const size_t n = a.size();
+      for(size_t i = 0; i < n; ++i){
         c[i] = 0;
       }
-      for(unsigned int i = 0; i < n; ++i){
+      for(size_t i = 0; i < n; ++i){
         if(a[i] == 0){
           continue;
         }
@@ -150,11 +150,10 @@ namespace hdi{
 
     template <typename sparse_matrix_type, typename vector_type>
     void computeStationaryDistribution(const sparse_matrix_type& fmc, vector_type* distribution, uint32_t iterations, typename vector_type::value_type eps){
-      const auto n = fmc.size();
+      const size_t n = fmc.size();
       assert(fmc.size() == distribution->size());
 
-
-      for(int i = 0; i < n; ++i){
+      for(size_t i = 0; i < n; ++i){
         double sum = 0;
         if constexpr (std::is_same_v<sparse_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
         {
@@ -172,7 +171,6 @@ namespace hdi{
         if(std::abs(sum-1) > 0.001)
           std::cout << "fmc test(" << i << "): " << sum <<std::endl;
       }
-
 
       vector_type temp_distr(n,0);
       vector_type* a(distribution);

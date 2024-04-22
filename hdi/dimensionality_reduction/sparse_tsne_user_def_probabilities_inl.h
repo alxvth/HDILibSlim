@@ -77,8 +77,8 @@ namespace hdi{
         throw std::logic_error("Algorithm must be initialized before ");
       }
       embedding_position.resize(_params._embedding_dimensionality);
-      for(int i = 0; i < _params._embedding_dimensionality; ++i){
-        (*_embedding_container)[i] = (*_embedding_container)[handle*_params._embedding_dimensionality + i];
+      for(unsigned int i = 0; i < _params._embedding_dimensionality; ++i){
+        (*_embedding_container)[i] = (*_embedding_container)[static_cast<size_t>(handle) * _params._embedding_dimensionality + i];
       }
     }
 
@@ -91,8 +91,8 @@ namespace hdi{
       utils::secureLog(_logger,"Initializing tSNE...");
       {//Aux data
         _params = params;
-        unsigned int size = probabilities.size();
-        unsigned int size_sq = probabilities.size()*probabilities.size();
+        const size_t size = probabilities.size();
+        const size_t size_sq = probabilities.size()*probabilities.size();
 
         _embedding = embedding;
         _embedding_container = &(embedding->getContainer());
@@ -123,8 +123,8 @@ namespace hdi{
       utils::secureLog(_logger,"Initializing tSNE with a user-defined joint-probability distribution...");
       {//Aux data
         _params = params;
-        unsigned int size = distribution.size();
-        unsigned int size_sq = distribution.size()*distribution.size();
+        const size_t size = distribution.size();
+        const size_t size_sq = distribution.size()*distribution.size();
 
         _embedding = embedding;
         _embedding_container = &(embedding->getContainer());
@@ -154,9 +154,9 @@ namespace hdi{
     void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::computeHighDimensionalDistribution(const sparse_scalar_matrix& probabilities){
       utils::secureLog(_logger,"Computing high-dimensional joint probability distribution...");
 
-      const int n = getNumberOfDataPoints();
+      const size_t n = getNumberOfDataPoints();
       //Can be improved by using the simmetry of the matrix (half the memory) //TODO
-      for(int j = 0; j < n; ++j){
+      for(size_t j = 0; j < n; ++j){
         if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
         {
           for (Eigen::SparseVector<float>::InnerIterator it(probabilities[j].memory()); it; ++it) {
@@ -197,7 +197,7 @@ namespace hdi{
         std::srand(seed);
       }
         
-      for (int i = 0; i < _embedding->numDataPoints(); ++i) {
+      for (size_t i = 0; i < _embedding->numDataPoints(); ++i) {
         double x(0.);
         double y(0.);
         double radius(0.);
@@ -273,13 +273,13 @@ namespace hdi{
 
     template <typename scalar, typename sparse_scalar_matrix>
     void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::computeLowDimensionalDistribution(){
-      const int n = getNumberOfDataPoints();
+      const size_t n = getNumberOfDataPoints();
 #ifdef __USE_GCD__
       //std::cout << "GCD dispatch, sparse_tsne_user_def_probabilities 285.\n";
       dispatch_apply(n, dispatch_get_global_queue(0, 0), ^(size_t j) {
 #else
       #pragma omp parallel for
-      for(int j = 0; j < n; ++j){
+      for(std::int64_t j = 0; j < n; ++j){
 #endif //__USE_GCD__
         _Q[j*n + j] = 0;
         for(int i = j+1; i < n; ++i){
@@ -308,17 +308,17 @@ namespace hdi{
 
     template <typename scalar, typename sparse_scalar_matrix>
     void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::computeExactGradient(double exaggeration){
-      const int n = getNumberOfDataPoints();
+      const size_t n = getNumberOfDataPoints();
       const int dim = _params._embedding_dimensionality;
 
-      for(int i = 0; i < n; ++i){
+      for(size_t i = 0; i < n; ++i){
         for(int d = 0; d < dim; ++d){
           _gradient[i * dim + d] = 0;
         }
       }
 
-      for(int i = 0; i < n; ++i){
-        for(int j = 0; j < n; ++j){
+      for(size_t i = 0; i < n; ++i){
+        for(size_t j = 0; j < n; ++j){
           for(int d = 0; d < dim; ++d){
             const int idx = i*n + j;
             const double distance((*_embedding_container)[i * dim + d] - (*_embedding_container)[j * dim + d]);
@@ -330,8 +330,8 @@ namespace hdi{
         {
           for (Eigen::SparseVector<float>::InnerIterator it(_P[i].memory()); it; ++it) {
             for (int d = 0; d < dim; ++d) {
-              const int j = it.index();
-              const int idx = i * n + j;
+              const auto j = it.index();
+              const size_t idx = i * n + j;
               const double distance((*_embedding_container)[i * dim + d] - (*_embedding_container)[j * dim + d]);
               double p_ij = it.value() / n;
 
@@ -345,8 +345,8 @@ namespace hdi{
         {
           for (auto& elem : _P[i]) {
             for (int d = 0; d < dim; ++d) {
-              const int j = elem.first;
-              const int idx = i * n + j;
+              const auto j = elem.first;
+              const size_t idx = i * n + j;
               const double distance((*_embedding_container)[i * dim + d] - (*_embedding_container)[j * dim + d]);
               double p_ij = elem.second / n;
 
@@ -378,7 +378,7 @@ namespace hdi{
 //      dispatch_apply(getNumberOfDataPoints(), dispatch_get_global_queue(0, 0), ^(size_t n) {
 //#else
       #pragma omp parallel for
-      for(int n = 0; n < getNumberOfDataPoints(); n++){
+      for(std::int64_t n = 0; n < getNumberOfDataPoints(); n++){
 //#endif //__USE_GCD__
         sptree.computeNonEdgeForcesOMP(n, _theta, negative_forces.data() + n * _params._embedding_dimensionality, sum_Q_subvalues[n]);
       }
@@ -387,11 +387,11 @@ namespace hdi{
 //#endif
 
       sum_Q = 0;
-      for(int n = 0; n < getNumberOfDataPoints(); n++){
+      for(size_t n = 0; n < getNumberOfDataPoints(); n++){
         sum_Q += sum_Q_subvalues[n];
       }
 
-      for(int i = 0; i < _gradient.size(); i++){
+      for(size_t i = 0; i < _gradient.size(); i++){
         _gradient[i] = positive_forces[i] - (negative_forces[i] / sum_Q);
       }
 
@@ -403,7 +403,7 @@ namespace hdi{
 
     template <typename scalar, typename sparse_scalar_matrix>
     void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::updateTheEmbedding(double mult){
-      for(int i = 0; i < _gradient.size(); ++i){
+      for(size_t i = 0; i < _gradient.size(); ++i){
         _gain[i] = static_cast<scalar_type>((sign(_gradient[i]) != sign(_previous_gradient[i])) ? (_gain[i] + .2) : (_gain[i] * .8));
         if(_gain[i] < _params._minimum_gain){
           _gain[i] = static_cast<scalar_type>(_params._minimum_gain);

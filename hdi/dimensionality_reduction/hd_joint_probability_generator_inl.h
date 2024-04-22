@@ -38,15 +38,11 @@
 #include "hdi/utils/math_utils.h"
 #include "hdi/utils/log_helper_functions.h"
 #include "hdi/utils/scoped_timers.h"
+
 #include <random>
 #include <chrono>
-#include <unordered_set>
-#include <numeric>
 #include <thread>
 #include <type_traits>
-#if defined(_OPENMP)
-#include "omp.h"
-#endif
 
 #include "hnswlib/hnswlib.h"
 #pragma warning( push )
@@ -63,8 +59,8 @@ namespace hdi {
   namespace dr {
     /////////////////////////////////////////////////////////////////////////
 
-    template <typename scalar, typename sparse_scalar_matrix, typename integer>
-    HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::Parameters::Parameters() :
+    template <typename scalar, typename sparse_scalar_matrix, typename integer, typename unsigned_integer>
+    HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer, unsigned_integer>::Parameters::Parameters() :
       _perplexity(30),
       _perplexity_multiplier(3),
       _aknn_algorithm(hdi::dr::KNN_ANNOY),
@@ -76,8 +72,8 @@ namespace hdi {
 
     /////////////////////////////////////////////////////////////////////////
 
-    template <typename scalar, typename sparse_scalar_matrix, typename integer>
-    HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::Statistics::Statistics() :
+    template <typename scalar, typename sparse_scalar_matrix, typename integer, typename unsigned_integer>
+    HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer, unsigned_integer>::Statistics::Statistics() :
       _total_time(0),
       _trees_construction_time(0),
       _init_knn_time(0),
@@ -85,8 +81,8 @@ namespace hdi {
       _distribution_time(0)
     {}
 
-    template <typename scalar, typename sparse_scalar_matrix, typename integer>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::Statistics::reset() {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer, typename unsigned_integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer, unsigned_integer>::Statistics::reset() {
       _total_time = 0;
       _trees_construction_time = 0;
       _init_knn_time = 0;
@@ -94,8 +90,8 @@ namespace hdi {
       _distribution_time = 0;
     }
 
-    template <typename scalar, typename sparse_scalar_matrix, typename integer>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::Statistics::log(utils::AbstractLog* logger)const {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer, typename unsigned_integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer, unsigned_integer>::Statistics::log(utils::AbstractLog* logger)const {
       utils::secureLog(logger, "\n-------- HD Joint Probability Generator Statistics -----------");
       utils::secureLogValue(logger, "Total time", _total_time);
       utils::secureLogValue(logger, "\tTrees construction time", _trees_construction_time, true, 1);
@@ -108,15 +104,15 @@ namespace hdi {
 
     /////////////////////////////////////////////////////////////////////////
 
-    template <typename scalar, typename sparse_scalar_matrix, typename integer>
-    HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::HDJointProbabilityGenerator() :
+    template <typename scalar, typename sparse_scalar_matrix, typename integer, typename unsigned_integer>
+    HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer, unsigned_integer>::HDJointProbabilityGenerator() :
       _logger(nullptr)
     {
 
     }
 
-    template <typename scalar, typename sparse_scalar_matrix, typename integer>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::computeJointProbabilityDistribution(scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, sparse_scalar_matrix& distribution, Parameters params) {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer, typename unsigned_integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer, unsigned_integer>::computeJointProbabilityDistribution(scalar_type* high_dimensional_data, size_t num_dim, size_t num_dps, sparse_scalar_matrix& distribution, Parameters params) {
       utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._total_time);
 
       hdi::utils::secureLog(_logger, "Computing the HD joint probability distribution...");
@@ -132,8 +128,8 @@ namespace hdi {
       symmetrize(distribution);
     }
 
-    template <typename scalar, typename sparse_scalar_matrix, typename integer>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::computeProbabilityDistributions(scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, sparse_scalar_matrix& distribution, Parameters params) {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer, typename unsigned_integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer, unsigned_integer>::computeProbabilityDistributions(scalar_type* high_dimensional_data, size_t num_dim, size_t num_dps, sparse_scalar_matrix& distribution, Parameters params) {
       utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._total_time);
 
       hdi::utils::secureLog(_logger, "Computing the HD joint probability distribution...");
@@ -148,8 +144,8 @@ namespace hdi {
       computeGaussianDistributions(distances_squared, indices, distribution, params);
     }
 
-    template <typename scalar, typename sparse_scalar_matrix, typename integer>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::computeProbabilityDistributions(scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, std::vector<scalar_type>& probabilities, std::vector<integer>& indices, Parameters params) {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer, typename unsigned_integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer, unsigned_integer>::computeProbabilityDistributions(scalar_type* high_dimensional_data, size_t num_dim, size_t num_dps, std::vector<scalar_type>& probabilities, std::vector<integer>& indices, Parameters params) {
       utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._total_time);
 
       hdi::utils::secureLog(_logger, "Computing the HD joint probability distribution...");
@@ -163,11 +159,13 @@ namespace hdi {
     }
 
 
-    template <typename scalar, typename sparse_scalar_matrix, typename integer>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<integer>& indices, int nn, sparse_scalar_matrix& distribution, Parameters& params) {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer, typename unsigned_integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer, unsigned_integer>::computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<integer>& indices, int nn, sparse_scalar_matrix& distribution, Parameters& params) {
       utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._distribution_time);
       utils::secureLog(_logger, "Computing joint-probability distribution...");
-      const int n = distribution.size();
+      const size_t n = distribution.size();
+
+      assert(nn >= 0);
 
 #ifdef __USE_GCD__
       __block scalar_vector_type temp_vector(distances_squared.size(), 0);
@@ -180,7 +178,7 @@ namespace hdi {
       dispatch_apply(n, dispatch_get_global_queue(0, 0), ^ (size_t j) {
 #else
 #pragma omp parallel for
-      for (int j = 0; j < n; ++j) {
+      for (std::int64_t j = 0; j < n; ++j) {
 #endif //__USE_GCD__
         const auto sigma = utils::computeGaussianDistributionWithFixedPerplexity<scalar_vector_type>(
           distances_squared.begin() + j * nn, //check squared
@@ -197,13 +195,13 @@ namespace hdi {
       );
 #endif
 
-      for (int j = 0; j < n; ++j) {
+      for (size_t j = 0; j < n; ++j) {
 
         if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
           distribution[j].resize(distribution.size());
 
         for (int k = 1; k < nn; ++k) {
-          const unsigned int i = j * nn + k;
+          const size_t i = j * nn + k;
           // if items do not have all the same number of neighbors this is indicated by -1
           if (indices[i] == -1)
             continue;
@@ -212,11 +210,11 @@ namespace hdi {
       }
       }
 
-    template <typename scalar, typename sparse_scalar_matrix, typename integer>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<integer>& indices, sparse_scalar_matrix& distribution, Parameters& params) {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer, typename unsigned_integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer, unsigned_integer>::computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<integer>& indices, sparse_scalar_matrix& distribution, Parameters& params) {
       utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._distribution_time);
       utils::secureLog(_logger, "Computing joint-probability distribution...");
-      const int n = distribution.size();
+      const size_t n = distribution.size();
 
       const unsigned int nn = static_cast<unsigned int>(params._perplexity * params._perplexity_multiplier) + 1;
 #ifdef __USE_GCD__
@@ -230,7 +228,7 @@ namespace hdi {
       dispatch_apply(n, dispatch_get_global_queue(0, 0), ^ (size_t j) {
 #else
 #pragma omp parallel for
-      for (int j = 0; j < n; ++j) {
+      for (std::int64_t j = 0; j < n; ++j) {
 #endif //__USE_GCD__
         const auto sigma = utils::computeGaussianDistributionWithFixedPerplexity<scalar_vector_type>(
           distances_squared.begin() + j * nn, //check squared
@@ -247,32 +245,32 @@ namespace hdi {
       );
 #endif
 
-      for (int j = 0; j < n; ++j) {
+      for (size_t j = 0; j < n; ++j) {
 
         if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
           distribution[j].resize(distribution.size());
 
         for (int k = 1; k < nn; ++k) {
-          const unsigned int i = j * nn + k;
+          const size_t i = j * nn + k;
           distribution[j][indices[i]] = temp_vector[i];
         }
       }
     }
 
-    template <typename scalar, typename sparse_scalar_matrix, typename integer>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<integer>& indices, std::vector<scalar_type>& probabilities, Parameters& params) {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer, typename unsigned_integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer, unsigned_integer>::computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<integer>& indices, std::vector<scalar_type>& probabilities, Parameters& params) {
       utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._distribution_time);
       utils::secureLog(_logger, "Computing joint-probability distribution...");
 
       const unsigned int nn = static_cast<unsigned int>(params._perplexity * params._perplexity_multiplier) + 1;
-      const int n = indices.size() / nn;
+      const size_t n = indices.size() / nn;
 
 #ifdef __USE_GCD__
       std::cout << "GCD dispatch, hd_joint_probability_generator 232.\n";
       dispatch_apply(n, dispatch_get_global_queue(0, 0), ^ (size_t j) {
 #else
 #pragma omp parallel for
-      for (int j = 0; j < n; ++j) {
+      for (std::int64_t j = 0; j < n; ++j) {
 #endif //__USE_GCD__
         const auto sigma = utils::computeGaussianDistributionWithFixedPerplexity<scalar_vector_type>(
           distances_squared.begin() + j * nn, //check squared
@@ -290,10 +288,10 @@ namespace hdi {
 #endif
     }
 
-    template <typename scalar, typename sparse_scalar_matrix, typename integer>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::symmetrize(sparse_scalar_matrix& distribution) {
-      const int n = distribution.size();
-      for (int j = 0; j < n; ++j) {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer, typename unsigned_integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer, unsigned_integer>::symmetrize(sparse_scalar_matrix& distribution) {
+      const size_t n = distribution.size();
+      for (size_t j = 0; j < n; ++j) {
         if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
         {
           for (Eigen::SparseVector<float>::InnerIterator it(distribution[j].memory()); it; ++it) {
@@ -315,12 +313,12 @@ namespace hdi {
       }
     }
 
-    template <typename scalar, typename sparse_scalar_matrix, typename integer>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::computeProbabilityDistributionsFromDistanceMatrix(const std::vector<scalar_type>& squared_distance_matrix, unsigned int num_dps, sparse_scalar_matrix& distribution, Parameters params) {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer, typename unsigned_integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer, unsigned_integer>::computeProbabilityDistributionsFromDistanceMatrix(const std::vector<scalar_type>& squared_distance_matrix, size_t num_dps, sparse_scalar_matrix& distribution, Parameters params) {
       utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._distribution_time);
       utils::secureLog(_logger, "Computing joint-probability distribution...");
-      const int n = num_dps;
-      const unsigned int nn = num_dps;
+      const size_t n = num_dps;
+      const size_t nn = num_dps;
 #ifdef __USE_GCD__
       __block scalar_vector_type temp_vector(num_dps*num_dps, 0);
 #else
@@ -334,7 +332,7 @@ namespace hdi {
       dispatch_apply(n, dispatch_get_global_queue(0, 0), ^ (size_t j) {
 #else
 #pragma omp parallel for
-      for (int j = 0; j < n; ++j) {
+      for (std::int64_t j = 0; j < n; ++j) {
 #endif //__USE_GCD__
         const auto sigma = utils::computeGaussianDistributionWithFixedPerplexity<scalar_vector_type>(
           squared_distance_matrix.begin() + j * nn, //check squared
@@ -344,23 +342,27 @@ namespace hdi {
           params._perplexity,
           200,
           1e-5,
-          j
+          0
           );
       }
 #ifdef __USE_GCD__
       );
 #endif
 
-      for (int j = 0; j < n; ++j) {
-        for (int k = 0; k < nn; ++k) {
-          const unsigned int i = j * nn + k;
+      for (size_t j = 0; j < n; ++j) {
+
+        if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
+          distribution[j].resize(distribution.size());
+
+        for (size_t k = 0; k < nn; ++k) {
+          const size_t i = j * nn + k;
           distribution[j][k] = temp_vector[i];
         }
       }
     }
 
-    template <typename scalar, typename sparse_scalar_matrix, typename integer>
-    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer>::computeHighDimensionalDistances(const scalar_type* high_dimensional_data, size_t num_dim, size_t num_dps, knn_params params, std::vector<scalar_type>& distances_squared, std::vector<integer_type>& neighborhood_indices) {
+    template <typename scalar, typename sparse_scalar_matrix, typename integer, typename unsigned_integer>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix, integer, unsigned_integer>::computeHighDimensionalDistances(const scalar_type* high_dimensional_data, size_t num_dim, size_t num_dps, knn_params params, std::vector<scalar_type>& distances_squared, std::vector<integer_type>& neighborhood_indices) {
       const auto nn = params.num_neigh;
       distances_squared.resize(num_dps * nn);
       neighborhood_indices.resize(num_dps * nn);
@@ -402,7 +404,7 @@ namespace hdi {
         {
           utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._comp_knn_time);
 #pragma omp parallel for
-          for (int i = 0; i < num_dps; ++i)
+          for (std::int64_t i = 0; i < num_dps; ++i)
           {
             auto top_candidates = appr_alg.searchKnn(high_dimensional_data + (i * num_dim), (hnswlib::labeltype)nn);
 
@@ -414,7 +416,7 @@ namespace hdi {
 
             scalar_type* distances = distances_squared.data() + (i * nn);
             integer_type* indices = neighborhood_indices.data() + (i * nn);
-            int j = 0;
+            size_t j = 0;
             assert(top_candidates.size() == nn);
             while (top_candidates.size() > 0)
             {
@@ -466,9 +468,9 @@ namespace hdi {
         {
           utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
 
-          for (int i = 0; i < num_dps; ++i) {
+          for (size_t i = 0; i < num_dps; ++i) {
             double* vec = new double[num_dim];
-            for (int z = 0; z < num_dim; ++z) {
+            for (size_t z = 0; z < num_dim; ++z) {
               vec[z] = high_dimensional_data[i * num_dim + z];
             }
             tree->add_item(i, vec);
@@ -493,7 +495,7 @@ namespace hdi {
           utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._comp_knn_time);
 
 #pragma omp parallel for
-          for (int n = 0; n < num_dps; n++)
+          for (std::int64_t n = 0; n < num_dps; n++)
           {
             // Find nearest neighbors
             std::vector<int> closest;
@@ -501,7 +503,7 @@ namespace hdi {
             tree->get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
 
             // Copy current row
-            for (unsigned int m = 0; m < nn; m++) {
+            for (size_t m = 0; m < nn; m++) {
               neighborhood_indices[n * nn + m] = closest[m];
               distances_squared[n * nn + m] = closest_distances[m] * closest_distances[m];
             }
