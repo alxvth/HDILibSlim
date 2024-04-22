@@ -54,10 +54,10 @@ namespace hdi{
 
       const unsigned int invalid = std::numeric_limits<unsigned int>::max();
       vertex_to_cluster.resize(weighted_graph.size(),invalid);
-      const unsigned int n = weighted_graph.size();
+      const size_t n = weighted_graph.size();
       unsigned int cluster_idx = 0;
 
-      for(unsigned int i = 0; i < n; ++i){
+      for(size_t i = 0; i < n; ++i){
         if(vertex_to_cluster[i] == invalid){
           std::queue<unsigned int> queue;
           queue.push(i);
@@ -267,7 +267,7 @@ namespace hdi{
 
       int smoothing_iters = 2;
 
-      for(int j = 0; j < src.size(); ++j){
+      for(size_t j = 0; j < src.size(); ++j){
         std::vector<scalar_type> a(src.size(),0);
         a[j] = 1;
         std::vector<scalar_type> c(src.size(),0);
@@ -275,7 +275,7 @@ namespace hdi{
           multiply(a,src,c);
           a = c;
         }
-        for(int i = 0; i < c.size(); ++i){
+        for(size_t i = 0; i < c.size(); ++i){
           if(c[i]!=0 && i!=j){
             dst[j][i] = c[i];
           }
@@ -283,7 +283,7 @@ namespace hdi{
       }
 
       //normalize
-      for(int j = 0; j < dst.size(); ++j){
+      for(size_t j = 0; j < dst.size(); ++j){
         double sum = 0;
         if constexpr (std::is_same_v<sparse_scalar_matrix_type, std::vector<hdi::data::SparseVec<unsigned int, float>>>)
         {

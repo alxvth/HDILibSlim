@@ -106,7 +106,7 @@ namespace hdi{
       void computeProbabilityDistributions(/*const*/ scalar_type* high_dimensional_data, size_t num_dim, size_t num_dps, sparse_scalar_matrix& distribution, Parameters params = Parameters());
       void computeProbabilityDistributions(/*const*/ scalar_type* high_dimensional_data, size_t num_dim, size_t num_dps, std::vector<scalar_type>& probabilities, std::vector<integer_type>& indices, Parameters params = Parameters());
       
-            //! Compute a gaussian distribution for each data point given pre-calculated distances. Expects a full (square) distances matrix
+      //! Compute a gaussian distribution for each data point given pre-calculated distances. Expects a full (square) distances matrix
       void computeProbabilityDistributionsFromDistanceMatrix(const std::vector<scalar_type>& squared_distance_matrix, size_t num_dps, sparse_scalar_matrix& distribution, Parameters params = Parameters());
      
       //! Compute a gaussian distribution for each data point given pre-calculated kNN. Expects the first neighbors to be the data point itself and ignores it

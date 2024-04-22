@@ -94,34 +94,34 @@ namespace hdi{
 
     private:
       class Cell {
-        unsigned int _emb_dimension;
+        size_t _emb_dimension;
         hp_scalar_type* corner;
         hp_scalar_type* width;
 
       public:
-        Cell(unsigned int inp__emb_dimension);
-        Cell(unsigned int inp__emb_dimension, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
+        Cell(size_t inp__emb_dimension);
+        Cell(size_t inp__emb_dimension, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
         ~Cell();
 
-        hp_scalar_type getCorner(unsigned int d);
-        hp_scalar_type getWidth(unsigned int d);
-        void setCorner(unsigned int d, hp_scalar_type val);
-        void setWidth(unsigned int d, hp_scalar_type val);
+        hp_scalar_type getCorner(size_t d);
+        hp_scalar_type getWidth(size_t d);
+        void setCorner(size_t d, hp_scalar_type val);
+        void setWidth(size_t d, hp_scalar_type val);
         bool containsPoint(scalar_type point[]);
       };
 
       // Fixed constants
-      static const unsigned int QT_NODE_CAPACITY = 1;
+      static const size_t QT_NODE_CAPACITY = 1;
 
       // A buffer we use when doing force computations
       //hp_scalar_type* buff;
 
       // Properties of this node in the tree
       SPTree* parent;
-      unsigned int _emb_dimension;
+      size_t _emb_dimension;
       bool is_leaf;
-      unsigned int size;
-      unsigned int cum_size;
+      size_t size;
+      size_t cum_size;
 
       // Axis-aligned bounding box stored as a center with half-_emb_dimensions to represent the boundaries of this quad tree
       Cell* boundary;
@@ -129,31 +129,31 @@ namespace hdi{
       // Indices in this space-partitioning tree node, corresponding center-of-mass, and list of all children
       scalar_type* _emb_positions;
       hp_scalar_type* _center_of_mass;
-      unsigned int index[QT_NODE_CAPACITY];
+      size_t index[QT_NODE_CAPACITY];
 
       // Children
       SPTree** children;
-      unsigned int no_children;
+      size_t no_children;
 
     public:
-      SPTree(unsigned int D, scalar_type* inp_data, unsigned int N);
+      SPTree(size_t D, scalar_type* inp_data, size_t N);
     private:
-      SPTree(unsigned int D, scalar_type* inp_data, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
-      SPTree(unsigned int D, scalar_type* inp_data, unsigned int N, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
-      SPTree(SPTree* inp_parent, unsigned int D, scalar_type* inp_data, unsigned int N, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
-      SPTree(SPTree* inp_parent, unsigned int D, scalar_type* inp_data, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
+      SPTree(size_t D, scalar_type* inp_data, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
+      SPTree(size_t D, scalar_type* inp_data, size_t N, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
+      SPTree(SPTree* inp_parent, size_t D, scalar_type* inp_data, size_t N, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
+      SPTree(SPTree* inp_parent, size_t D, scalar_type* inp_data, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
     public:
       ~SPTree();
       void setData(scalar_type* inp_data);
       SPTree* getParent();
-      bool insert(unsigned int new_index);
+      bool insert(size_t new_index);
       void subdivide();
       bool isCorrect();
-      void getAllIndices(unsigned int* indices);
-      unsigned int getDepth();
-      void computeNonEdgeForcesOMP(unsigned int point_index, hp_scalar_type theta, hp_scalar_type neg_f[], hp_scalar_type& sum_Q)const;
-      void computeNonEdgeForces(unsigned int point_index, hp_scalar_type theta, hp_scalar_type neg_f[], hp_scalar_type* sum_Q)const;
-      void computeEdgeForces(unsigned int* row_P, unsigned int* col_P, hp_scalar_type* val_P, hp_scalar_type sum_P, int N, hp_scalar_type* pos_f)const;
+      void getAllIndices(size_t* indices);
+      size_t getDepth();
+      void computeNonEdgeForcesOMP(size_t point_index, hp_scalar_type theta, hp_scalar_type neg_f[], hp_scalar_type& sum_Q)const;
+      void computeNonEdgeForces(size_t point_index, hp_scalar_type theta, hp_scalar_type neg_f[], hp_scalar_type* sum_Q)const;
+      void computeEdgeForces(size_t* row_P, size_t* col_P, hp_scalar_type* val_P, hp_scalar_type sum_P, std::int64_t N, hp_scalar_type* pos_f)const;
 
       template <typename sparse_scalar_matrix>
       void computeEdgeForces(const sparse_scalar_matrix& matrix, hp_scalar_type multiplier, hp_scalar_type* pos_f)const;
@@ -161,9 +161,9 @@ namespace hdi{
       void print();
 
     private:
-      void init(SPTree* inp_parent, unsigned int D, scalar_type* inp_data, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
-      void fill(unsigned int N);
-      unsigned int getAllIndices(unsigned int* indices, unsigned int loc);
+      void init(SPTree* inp_parent, size_t D, scalar_type* inp_data, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
+      void fill(size_t N);
+      size_t getAllIndices(size_t* indices, size_t loc);
     };
 
 
@@ -172,7 +172,7 @@ namespace hdi{
     template <typename scalar_type>
     template <typename sparse_scalar_matrix>
     void SPTree<scalar_type>::computeEdgeForces(const sparse_scalar_matrix& sparse_matrix, hp_scalar_type multiplier, hp_scalar_type* pos_f)const{
-      const int n = sparse_matrix.size();
+      const size_t n = sparse_matrix.size();
 
       // Loop over all edges in the graph
 #ifdef __USE_GCD__
@@ -180,10 +180,10 @@ namespace hdi{
       dispatch_apply(n, dispatch_get_global_queue(0, 0), ^(size_t j) {
 #else
 #pragma omp parallel for
-      for(int j = 0; j < n; ++j) {
+      for(std::int64_t j = 0; j < n; ++j) {
 #endif //__USE_GCD__
         std::vector<hp_scalar_type> buff(_emb_dimension,0);
-        unsigned int ind1, ind2;
+        size_t ind1, ind2;
         hp_scalar_type q_ij_1;
         ind1 = j * _emb_dimension;
         if constexpr (std::is_same_v<sparse_scalar_matrix, std::vector<hdi::data::SparseVec<uint32_t, float>>>)
@@ -192,16 +192,16 @@ namespace hdi{
             // Compute pairwise distance and Q-value
             q_ij_1 = 1.0;
             ind2 = it.index() * _emb_dimension;
-            for (unsigned int d = 0; d < _emb_dimension; d++)
+            for (size_t d = 0; d < _emb_dimension; d++)
               buff[d] = _emb_positions[ind1 + d] - _emb_positions[ind2 + d]; //buff contains (yi-yj) per each _emb_dimension
-            for (unsigned int d = 0; d < _emb_dimension; d++)
+            for (size_t d = 0; d < _emb_dimension; d++)
               q_ij_1 += buff[d] * buff[d];
 
             hp_scalar_type p_ij = it.value();
             hp_scalar_type res = hp_scalar_type(p_ij) * multiplier / q_ij_1 / n;
 
             // Sum positive force
-            for (unsigned int d = 0; d < _emb_dimension; d++)
+            for (size_t d = 0; d < _emb_dimension; d++)
               pos_f[ind1 + d] += res * buff[d] * multiplier; //(p_ij*q_j*mult) * (yi-yj)
           }
 
@@ -212,16 +212,16 @@ namespace hdi{
             // Compute pairwise distance and Q-value
             q_ij_1 = 1.0;
             ind2 = elem.first * _emb_dimension;
-            for (unsigned int d = 0; d < _emb_dimension; d++)
+            for (size_t d = 0; d < _emb_dimension; d++)
               buff[d] = _emb_positions[ind1 + d] - _emb_positions[ind2 + d]; //buff contains (yi-yj) per each _emb_dimension
-            for (unsigned int d = 0; d < _emb_dimension; d++)
+            for (size_t d = 0; d < _emb_dimension; d++)
               q_ij_1 += buff[d] * buff[d];
 
             hp_scalar_type p_ij = elem.second;
             hp_scalar_type res = hp_scalar_type(p_ij) * multiplier / q_ij_1 / n;
 
             // Sum positive force
-            for (unsigned int d = 0; d < _emb_dimension; d++)
+            for (size_t d = 0; d < _emb_dimension; d++)
               pos_f[ind1 + d] += res * buff[d] * multiplier; //(p_ij*q_j*mult) * (yi-yj)
           }
 

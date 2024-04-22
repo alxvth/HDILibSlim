@@ -30,7 +30,6 @@
  *
  */
 
-
 #ifndef SPARSE_TSNE_USER_DEF_PROBABILITIES_INL
 #define SPARSE_TSNE_USER_DEF_PROBABILITIES_INL
 
@@ -86,8 +85,8 @@ namespace hdi{
   /////////////////////////////////////////////////////////////////////////
 
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::initialize(const sparse_scalar_matrix& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params){
+    template <typename scalar, typename sparse_scalar_matrix_type>
+    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix_type>::initialize(const sparse_scalar_matrix_type& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params){
       utils::secureLog(_logger,"Initializing tSNE...");
       {//Aux data
         _params = params;
@@ -118,8 +117,8 @@ namespace hdi{
       utils::secureLog(_logger,"Initialization complete!");
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::initializeWithJointProbabilityDistribution(const sparse_scalar_matrix& distribution, data::Embedding<scalar_type>* embedding, TsneParameters params){
+    template <typename scalar, typename sparse_scalar_matrix_type>
+    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix_type>::initializeWithJointProbabilityDistribution(const sparse_scalar_matrix_type& distribution, data::Embedding<scalar_type>* embedding, TsneParameters params){
       utils::secureLog(_logger,"Initializing tSNE with a user-defined joint-probability distribution...");
       {//Aux data
         _params = params;
@@ -150,8 +149,8 @@ namespace hdi{
       utils::secureLog(_logger,"Initialization complete!");
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::computeHighDimensionalDistribution(const sparse_scalar_matrix& probabilities){
+    template <typename scalar, typename sparse_scalar_matrix_type>
+    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix_type>::computeHighDimensionalDistribution(const sparse_scalar_matrix_type& probabilities){
       utils::secureLog(_logger,"Computing high-dimensional joint probability distribution...");
 
       const size_t n = getNumberOfDataPoints();
@@ -364,11 +363,11 @@ namespace hdi{
     void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::computeBarnesHutGradient(double exaggeration){
       typedef double hp_scalar_type;
 
-      SPTree<scalar_type> sptree(_params._embedding_dimensionality,_embedding->getContainer().data(),getNumberOfDataPoints());
+      SPTree<scalar_type> sptree(_params._embedding_dimensionality, _embedding->getContainer().data(), getNumberOfDataPoints());
 
       scalar_type sum_Q = .0;
-      std::vector<hp_scalar_type> positive_forces(getNumberOfDataPoints()*_params._embedding_dimensionality);
-      /*__block*/ std::vector<hp_scalar_type> negative_forces(getNumberOfDataPoints()*_params._embedding_dimensionality);
+      std::vector<hp_scalar_type> positive_forces(getNumberOfDataPoints() * _params._embedding_dimensionality);
+      /*__block*/ std::vector<hp_scalar_type> negative_forces(getNumberOfDataPoints() * _params._embedding_dimensionality);
 
       sptree.computeEdgeForces(_P, exaggeration, positive_forces.data());
 
