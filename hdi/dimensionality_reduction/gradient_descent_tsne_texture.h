@@ -125,7 +125,7 @@ namespace hdi {
 #endif
       }
 
-      bool isInitialized() { return _initialized == true; }
+      bool isInitialized() const { return _initialized == true; }
 
       //! Exageration baseline
       double& exaggeration_baseline() { return _exaggeration_baseline; }
