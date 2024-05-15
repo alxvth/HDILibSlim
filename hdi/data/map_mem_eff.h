@@ -71,6 +71,10 @@ namespace hdi{
       //access
       mapped_type& operator[](const key_type& k);
 
+      mapped_type operator[] (const key_type& k) const {
+        return const_cast<MapMemEff&>(*this)[k];
+      }
+
       //find
       const_iterator find (const key_type& k) const;
 

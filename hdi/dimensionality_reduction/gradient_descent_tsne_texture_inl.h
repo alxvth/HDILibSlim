@@ -240,20 +240,14 @@ namespace hdi {
       }
       else // MapMemEff
       {
-        for (std::int64_t j = 0; j < n; ++j) {
+        for (uint32_t j = 0; j < n; ++j) {
           for (auto& elem : probabilities[j]) {
-              scalar_type v0 = elem.second;
-              auto iter = probabilities[elem.first].find(j);
-              scalar_type v1 = 0.;
-              if (iter != probabilities[elem.first].end())
-                v1 = iter->second;
-
-              const auto jointProb = static_cast<scalar_type>((v0 + v1) * 0.5);
-
-              _P[j][elem.first] = jointProb;
-              _P[elem.first][j] = jointProb;
-            }
+            const uint32_t i = elem.first;
+            scalar_type new_val = (probabilities[j][i] + probabilities[i][j]) * 0.5f;
+            _P[j][i] = new_val;
+            _P[i][j] = new_val;
           }
+        }
 
       } // MapMemEff
     }
