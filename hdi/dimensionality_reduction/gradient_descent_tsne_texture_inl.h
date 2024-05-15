@@ -231,16 +231,15 @@ namespace hdi {
             if (probabilities[it.index()].coeff(j) != 0.0)
               v1 = probabilities[it.index()].coeff(j);
 
-            _P[j][it.index()] = static_cast<scalar_type>((v0 + v1) * 0.5);
-            _P[it.index()][j] = static_cast<scalar_type>((v0 + v1) * 0.5);
+            const auto jointProb = static_cast<scalar_type>((v0 + v1) * 0.5);
+
+            _P[j][it.index()] = jointProb;
+            _P[it.index()][j] = jointProb;
           }
         }
       }
       else // MapMemEff
       {
-#pragma omp parallel
-        {
-#pragma omp for
         for (std::int64_t j = 0; j < n; ++j) {
           for (auto& elem : probabilities[j]) {
               scalar_type v0 = elem.second;
@@ -249,16 +248,14 @@ namespace hdi {
               if (iter != probabilities[elem.first].end())
                 v1 = iter->second;
 
-#pragma omp critical
-              {
-                _P[j][elem.first] = static_cast<scalar_type>((v0 + v1) * 0.5);
-                _P[elem.first][j] = static_cast<scalar_type>((v0 + v1) * 0.5);
-              }
+              const auto jointProb = static_cast<scalar_type>((v0 + v1) * 0.5);
+
+              _P[j][elem.first] = jointProb;
+              _P[elem.first][j] = jointProb;
             }
           }
-        } // parallel
 
-      } 
+      } // MapMemEff
     }
     template void GradientDescentTSNETexture<std::vector<hdi::data::SparseVec<uint32_t, float>>>::computeHighDimensionalDistribution(const std::vector<hdi::data::SparseVec<uint32_t, float>>&);
     template void GradientDescentTSNETexture<std::vector<hdi::data::MapMemEff<uint32_t, float>>>::computeHighDimensionalDistribution(const std::vector<hdi::data::MapMemEff<uint32_t, float>>&);
