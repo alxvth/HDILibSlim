@@ -1,4 +1,4 @@
-set(PROJECT_DR "hdidimensionalityreduction")
+set(PROJECT_DR "hdislimdimensionalityreduction")
 
 # Gather list of all .h files in "/"
 file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h gpgpu_sne/*.h)
@@ -21,14 +21,14 @@ message (STATUS "Annoy: " ${ANNOY_INCLUDE_DIR})
 
 target_compile_features(${PROJECT_DR} PRIVATE cxx_std_17)
 
-if(USE_OPENMP AND OpenMP_CXX_FOUND)
+if(OpenMP_CXX_FOUND)
 	target_link_libraries(${PROJECT_DR} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
 target_link_libraries(${PROJECT_DR} PRIVATE Eigen3::Eigen)
 
 # Hardware accelations: SSE and AVX
-check_and_link_AVX(${PROJECT_DR} ${USE_AVX})
+check_and_link_AVX(${PROJECT_DR} ${HDILibSlim_ENABLE_AVX})
 
 if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -37,13 +37,13 @@ if(UNIX)
 endif(UNIX)
 
 ########### INSTALL ##############
-if(INSTALL_HDILibSlim)
+if(HDILibSlim_INSTALL)
 	install(TARGETS ${PROJECT_DR}
 		EXPORT ${PROJECT_DR}Targets
 		LIBRARY DESTINATION lib/$<CONFIGURATION>
 		ARCHIVE DESTINATION lib/$<CONFIGURATION>
 	#    PUBLIC_HEADER DESTINATION include/hdi/dimensionality_reduction
-		COMPONENT hdidimensionalityreduction
+		COMPONENT hdislimdimensionalityreduction
 	)
 
 	# Preserve the header hierarchy by explicit install
@@ -64,7 +64,7 @@ if(INSTALL_HDILibSlim)
 			FILE ${PROJECT_DR}Targets.cmake
 			NAMESPACE HDISlim::
 			DESTINATION lib/cmake/HDILibSlim
-			COMPONENT HDIDIMENSIONALITYREDUCTION_TARGET
+			COMPONENT HDISLIMDIMENSIONALITYREDUCTION_TARGET
 	)
 
 	if(MSVC)

@@ -1,4 +1,4 @@
-set(PROJECT_UTILS "hdiutils")
+set(PROJECT_UTILS "hdislimutils")
 
 # Gather list of all .h files in "/"
 file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h glad/*.h glad/KHR/*.h)
@@ -12,27 +12,27 @@ target_include_directories(${PROJECT_UTILS} PRIVATE ${PROJECT_SOURCE_DIR})
 
 target_compile_features(${PROJECT_UTILS} PRIVATE cxx_std_17)
 
-if(USE_OPENMP AND OpenMP_CXX_FOUND)
+if(OpenMP_CXX_FOUND)
 	target_link_libraries(${PROJECT_UTILS} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
 target_link_libraries(${PROJECT_UTILS} PRIVATE Eigen3::Eigen)
 
 # Hardware accelations: SSE and AVX
-check_and_link_AVX(${PROJECT_UTILS} ${USE_AVX})
+check_and_link_AVX(${PROJECT_UTILS} ${HDILibSlim_ENABLE_AVX})
 
 if (UNIX)
     target_link_libraries (${PROJECT_UTILS} PRIVATE ${CMAKE_DL_LIBS}) # glad.cpp requires -ldl
 endif (UNIX)
 
 ########### INSTALL ##############
-if(INSTALL_HDILibSlim)
+if(HDILibSlim_INSTALL)
 	install(TARGETS ${PROJECT_UTILS}
 		EXPORT ${PROJECT_UTILS}Targets
 		LIBRARY DESTINATION lib/$<CONFIGURATION>
 		ARCHIVE DESTINATION lib/$<CONFIGURATION>
 	#    PUBLIC_HEADER DESTINATION include/hdi/utils
-		COMPONENT hdiutils
+		COMPONENT hdislimutils
 	)
 
 	# Preserve the header hierarchy by explicit install
@@ -53,7 +53,7 @@ if(INSTALL_HDILibSlim)
 			FILE ${PROJECT_UTILS}Targets.cmake
 			NAMESPACE HDISlim::
 			DESTINATION lib/cmake/HDILibSlim
-			COMPONENT HDIUTILS_TARGET
+			COMPONENT HDISLIMUTILS_TARGET
 	)
 
 	if(MSVC)

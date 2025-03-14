@@ -6,9 +6,9 @@
 
 set_and_check(HDILibSlim_INCLUDE_DIR "@PACKAGE_INCLUDE_INSTALL_DIR@")
 set_and_check(HDILibSlim_LIB_DIR "@PACKAGE_LIB_INSTALL_DIR@")
-list(APPEND HDILibSlim_LINK_LIBS HDISlim::hdidimensionalityreduction HDISlim::hdiutils HDISlim::hdidata)
+list(APPEND HDILibSlim_LINK_LIBS HDISlim::hdislimdimensionalityreduction HDISlim::hdislimutils HDISlim::hdislimdata)
 
-set(_supported_components  hdidimensionalityreduction hdiutils hdidata)
+set(_supported_components  hdislimdimensionalityreduction hdislimutils hdislimdata)
 
 set(HDILibSlim_FOUND 1)
 # Get all of the requested components (list the find_package COMPONENTS)

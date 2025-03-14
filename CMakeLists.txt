@@ -1,8 +1,7 @@
 cmake_minimum_required (VERSION 3.21)
 
-set(USE_AVX ON CACHE BOOL "Use AVX instructions sets if available")
-set(USE_OPENMP ON CACHE BOOL "Use OpenMP - by default ON")
-set(INSTALL_HDILibSlim ON CACHE BOOL "Whether to install the HDILibSlim")
+set(HDILibSlim_ENABLE_AVX ON CACHE BOOL "Use AVX instructions sets if available")
+set(HDILibSlim_INSTALL ON CACHE BOOL "Whether to install the HDILibSlim")
 
 set(PROJECT_HDILibSlim "HDILibSlim")
 PROJECT(${PROJECT_HDILibSlim} C CXX)
@@ -54,7 +53,7 @@ add_subdirectory (hdi/utils)						# PROJECT_UTILS
 add_subdirectory (hdi/data)							# PROJECT_DATA
 add_subdirectory (hdi/dimensionality_reduction)		# PROJECT_DR
 
-if(INSTALL_HDILibSlim)
+if(HDILibSlim_INSTALL)
 	# NOTE CMake installs are defined in the sub-projects.
 	# ***Create a HdpsCore package to support the find_package command**
 
