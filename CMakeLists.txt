@@ -54,11 +54,6 @@ add_subdirectory (hdi/utils)						# PROJECT_UTILS
 add_subdirectory (hdi/data)							# PROJECT_DATA
 add_subdirectory (hdi/dimensionality_reduction)		# PROJECT_DR
 
-# build order
-add_dependencies(hdidata hdiutils)
-add_dependencies(hdidimensionalityreduction hdiutils)
-add_dependencies(hdidimensionalityreduction hdidata)
-
 if(INSTALL_HDILibSlim)
 	# NOTE CMake installs are defined in the sub-projects.
 	# ***Create a HdpsCore package to support the find_package command**
