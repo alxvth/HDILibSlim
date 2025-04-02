@@ -8,15 +8,13 @@ add_library(${PROJECT_UTILS} STATIC ${HeaderFiles} ${SourceFiles} ${Resources} )
 
 target_include_directories(${PROJECT_UTILS} PRIVATE ${PROJECT_SOURCE_DIR})
 
+target_include_directories(${PROJECT_UTILS} PUBLIC "${eigen_SOURCE_DIR}")
+
 #set_target_properties(${PROJECT_UTILS} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 
 target_compile_features(${PROJECT_UTILS} PRIVATE cxx_std_17)
 
-if(OpenMP_CXX_FOUND)
-	target_link_libraries(${PROJECT_UTILS} PRIVATE OpenMP::OpenMP_CXX)
-endif()
-
-target_link_libraries(${PROJECT_UTILS} PRIVATE Eigen3::Eigen)
+target_link_libraries(${PROJECT_UTILS} PRIVATE OpenMP::OpenMP_CXX)
 
 # Hardware accelations: SSE and AVX
 check_and_link_AVX(${PROJECT_UTILS} ${HDILibSlim_ENABLE_AVX})

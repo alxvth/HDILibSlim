@@ -14,6 +14,10 @@ if (HDILibSlim_ENABLE_AVX)
     message(STATUS "ENABLE_AVX is ON")
 endif()
 
+if (HDILibSlim_INSTALL)
+    message(STATUS "INSTALL is ON")
+endif()
+
 message(STATUS "Building: HDILib ${HDILibSlim_VERSION}")
 message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 
@@ -50,6 +54,7 @@ message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(CMakeCommon)
+include(CMakeFetchUtils)
 
 if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DWIN32 /EHsc /MP /permissive- /Zc:__cplusplus")
@@ -62,13 +67,20 @@ endif(MSVC)
 # Dependencies
 # -----------------------------------------------------------------------------
 find_package(OpenMP REQUIRED)
-find_package(Eigen3 CONFIG REQUIRED)
+
+if(NOT eigen_SOURCE_DIR)
+    set(BUILD_TESTING OFF CACHE BOOL "Enable testing for Eigen" FORCE)
+    set(EIGEN_BUILD_TESTING  OFF CACHE BOOL "Enable creation of Eigen tests." FORCE)
+    set(EIGEN_BUILD_DOC OFF CACHE BOOL "Enable creation of Eigen documentation" FORCE)
+    set(EIGEN_BUILD_DEMOS OFF CACHE BOOL "Toggles the building of the Eigen demos" FORCE)
+    fetch_content_url(eigen "https://gitlab.com/libeigen/eigen/-/archive/3866cbfbe8622f41b4f9fa17227aaa7a8de13890/eigen-3866cbfbe8622f41b4f9fa17227aaa7a8de13890.tar.gz") # master as of 26/03/25
+endif()
 
 # -----------------------------------------------------------------------------
 # Projects
 # -----------------------------------------------------------------------------
-add_subdirectory (hdi/utils)				# PROJECT_UTILS
-add_subdirectory (hdi/data)				# PROJECT_DATA
+add_subdirectory (hdi/utils)						# PROJECT_UTILS
+add_subdirectory (hdi/data)							# PROJECT_DATA
 add_subdirectory (hdi/dimensionality_reduction)		# PROJECT_DR
 
 if(HDILibSlim_INSTALL)
