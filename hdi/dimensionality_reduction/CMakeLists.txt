@@ -16,16 +16,13 @@ get_filename_component(ANNOY_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../exte
 target_include_directories(${PROJECT_DR} PRIVATE ${ANNOY_INCLUDE_DIR})
 message (STATUS "Annoy: " ${ANNOY_INCLUDE_DIR})
 
+target_include_directories(${PROJECT_DR} PUBLIC "${eigen_SOURCE_DIR}")
 
 #set_target_properties(${PROJECT_DR} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 
 target_compile_features(${PROJECT_DR} PRIVATE cxx_std_17)
 
-if(OpenMP_CXX_FOUND)
-	target_link_libraries(${PROJECT_DR} PRIVATE OpenMP::OpenMP_CXX)
-endif()
-
-target_link_libraries(${PROJECT_DR} PRIVATE Eigen3::Eigen)
+target_link_libraries(${PROJECT_DR} PRIVATE OpenMP::OpenMP_CXX)
 
 # Hardware accelations: SSE and AVX
 check_and_link_AVX(${PROJECT_DR} ${HDILibSlim_ENABLE_AVX})

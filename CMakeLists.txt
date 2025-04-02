@@ -1,12 +1,31 @@
 cmake_minimum_required (VERSION 3.24)
 
-set(HDILibSlim_ENABLE_AVX ON CACHE BOOL "Use AVX instructions sets if available")
-set(HDILibSlim_INSTALL ON CACHE BOOL "Whether to install the HDILibSlim")
-
 set(PROJECT_HDILibSlim "HDILibSlim")
 PROJECT(${PROJECT_HDILibSlim} C CXX)
 
+# -----------------------------------------------------------------------------
+# User Options
+# -----------------------------------------------------------------------------
+option(HDILibSlim_ENABLE_AVX "Enable AVX support" ON)
+option(HDILibSlim_INSTALL "Whether to install the HDILibSlim" ON)
 set(HDILibSlim_VERSION "undefined" CACHE STRING "HDILibSlim Library version")
+
+if (HDILibSlim_ENABLE_AVX)
+    message(STATUS "ENABLE_AVX is ON")
+endif()
+
+if (HDILibSlim_INSTALL)
+    message(STATUS "INSTALL is ON")
+endif()
+
+message(STATUS "Building: HDILib ${HDILibSlim_VERSION}")
+message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
+
+# -----------------------------------------------------------------------------
+# CMake Options
+# -----------------------------------------------------------------------------
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # Disallow in-source builds. 
 # Build in sub dir e.g. source/build* is still allowed!
 if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}" AND NOT $ENV{CI})
@@ -33,24 +52,35 @@ message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 # CMake Options
 # Set the directory where CMake include files are to be found
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-# cmake utils
+
 include(CMakeCommon)
+include(CMakeFetchUtils)
 
 if(MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W2 /permissive- /Zc:__cplusplus")
-endif()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DWIN32 /EHsc /MP /permissive- /Zc:__cplusplus")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /MD")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
+endif(MSVC)
 
+# -----------------------------------------------------------------------------
 # Dependencies
-find_package(OpenMP)
-find_package(Eigen3 CONFIG REQUIRED)
+# -----------------------------------------------------------------------------
+find_package(OpenMP REQUIRED)
 
-if(OPENMP_FOUND)
-	message (STATUS "OpenMP found ${OpenMP_CXX_LIB_NAMES}")
+if(NOT eigen_SOURCE_DIR)
+    set(BUILD_TESTING OFF CACHE BOOL "Enable testing for Eigen" FORCE)
+    set(EIGEN_BUILD_TESTING  OFF CACHE BOOL "Enable creation of Eigen tests." FORCE)
+    set(EIGEN_BUILD_DOC OFF CACHE BOOL "Enable creation of Eigen documentation" FORCE)
+    set(EIGEN_BUILD_DEMOS OFF CACHE BOOL "Toggles the building of the Eigen demos" FORCE)
+    fetch_content_url(eigen "https://gitlab.com/libeigen/eigen/-/archive/3866cbfbe8622f41b4f9fa17227aaa7a8de13890/eigen-3866cbfbe8622f41b4f9fa17227aaa7a8de13890.tar.gz") # master as of 26/03/25
 endif()
 
-# add projects
-add_subdirectory (hdi/utils)				# PROJECT_UTILS
-add_subdirectory (hdi/data)				# PROJECT_DATA
+# -----------------------------------------------------------------------------
+# Projects
+# -----------------------------------------------------------------------------
+add_subdirectory (hdi/utils)						# PROJECT_UTILS
+add_subdirectory (hdi/data)							# PROJECT_DATA
 add_subdirectory (hdi/dimensionality_reduction)		# PROJECT_DR
 
 if(HDILibSlim_INSTALL)
