@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.21)
+cmake_minimum_required (VERSION 3.24)
 
 set(HDILibSlim_ENABLE_AVX ON CACHE BOOL "Use AVX instructions sets if available")
 set(HDILibSlim_INSTALL ON CACHE BOOL "Whether to install the HDILibSlim")
@@ -42,15 +42,15 @@ endif()
 
 # Dependencies
 find_package(OpenMP)
-find_package(Eigen3 3.4 CONFIG REQUIRED NO_MODULE)
+find_package(Eigen3 CONFIG REQUIRED)
 
 if(OPENMP_FOUND)
 	message (STATUS "OpenMP found ${OpenMP_CXX_LIB_NAMES}")
 endif()
 
 # add projects
-add_subdirectory (hdi/utils)						# PROJECT_UTILS
-add_subdirectory (hdi/data)							# PROJECT_DATA
+add_subdirectory (hdi/utils)				# PROJECT_UTILS
+add_subdirectory (hdi/data)				# PROJECT_DATA
 add_subdirectory (hdi/dimensionality_reduction)		# PROJECT_DR
 
 if(HDILibSlim_INSTALL)
