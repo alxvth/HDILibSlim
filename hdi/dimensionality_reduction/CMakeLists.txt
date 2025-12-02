@@ -17,6 +17,7 @@ target_include_directories(${PROJECT_DR} PRIVATE ${ANNOY_INCLUDE_DIR})
 message (STATUS "Annoy: " ${ANNOY_INCLUDE_DIR})
 
 target_include_directories(${PROJECT_DR} PUBLIC "${eigen_SOURCE_DIR}")
+target_link_libraries(${PROJECT_DR} PUBLIC Eigen3::Eigen)
 
 #set_target_properties(${PROJECT_DR} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 

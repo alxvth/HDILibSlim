@@ -9,6 +9,7 @@ add_library(${PROJECT_DATA} STATIC ${HeaderFiles} ${SourceFiles} )
 target_include_directories(${PROJECT_DATA} PRIVATE ${PROJECT_SOURCE_DIR})
 
 target_include_directories(${PROJECT_DATA} PUBLIC "${eigen_SOURCE_DIR}")
+target_link_libraries(${PROJECT_DATA} PUBLIC Eigen3::Eigen)
 
 set_target_properties(${PROJECT_DATA} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 
