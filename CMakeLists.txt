@@ -76,7 +76,7 @@ if(NOT eigen_SOURCE_DIR AND NOT TARGET Eigen3::Eigen AND NOT Eigen3_FOUND)
     set(EIGEN_BUILD_DEMOS OFF CACHE BOOL "Toggles the building of the Eigen demos" FORCE)
     fetch_content_url(eigen "https://gitlab.com/libeigen/eigen/-/archive/5.0.1.tar.gz")
 else()
-    message(STATUS "InteractiveHsnePlugin: Use external Eigen")
+    message(STATUS "HDILibSlim: Use external Eigen")
 endif()
 
 # -----------------------------------------------------------------------------
