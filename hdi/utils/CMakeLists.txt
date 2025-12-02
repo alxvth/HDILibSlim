@@ -8,11 +8,9 @@ add_library(${PROJECT_UTILS} STATIC ${HeaderFiles} ${SourceFiles} ${Resources} )
 
 target_include_directories(${PROJECT_UTILS} PRIVATE ${PROJECT_SOURCE_DIR})
 
-target_include_directories(${PROJECT_UTILS} PUBLIC "${eigen_SOURCE_DIR}")
-target_link_libraries(${PROJECT_UTILS} PUBLIC Eigen3::Eigen)
-
 #set_target_properties(${PROJECT_UTILS} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 
+target_link_libraries(${PROJECT_UTILS} PUBLIC Eigen3::Eigen)
 target_compile_features(${PROJECT_UTILS} PRIVATE cxx_std_17)
 
 target_link_libraries(${PROJECT_UTILS} PRIVATE OpenMP::OpenMP_CXX)
